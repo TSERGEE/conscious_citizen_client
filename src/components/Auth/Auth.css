@@ -1,0 +1,88 @@
+/* Auth.css — только для форм */
+
+.auth-container {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  height: 100vh;
+  width: 100%;
+  max-width: 600px;
+  padding: 60px 60px;
+}
+
+.auth-container h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 30px;
+  color: #333;
+  text-align: center;
+}
+
+.auth-container .description {
+  text-align: center;
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 14px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+  font-size: 14px;
+}
+
+.form-group input {
+  background-color: #ffffff;
+  color: #333333;
+  width: 100%;
+  padding: 14px 10px;
+  border: 2px solid #e1e1e1;
+  border-radius: 10px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #cfcfcf;
+}
+
+button {
+  width: 104%;
+  padding: 14px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #5a67d8;
+}
+
+.extra-link {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.extra-link a {
+  color: #667eea;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.extra-link a:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
