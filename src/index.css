@@ -50,8 +50,8 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 @font-face {
-  font-family: 'NFS font';
-  src: url('/src/assets/fonts/NFS font.ttf') format('ttf');
+  font-family: 'Strogo';
+  src: url('/src/assets/fonts/Strogo-Regular.ttf') format('ttf');
   font-weight: normal;
   font-style: normal;
   font-display: swap;

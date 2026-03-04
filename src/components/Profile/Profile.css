@@ -1,0 +1,142 @@
+/* Profile.css — стили для профиля, согласованные с Auth.css */
+
+/* Обеспечиваем box-sizing для всех элементов внутри профиля */
+.profile-container * {
+  box-sizing: border-box;
+}
+
+.profile-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 30px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+.profile-container h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.profile-form .form-group {
+  margin-bottom: 20px;
+}
+
+.profile-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+  font-size: 14px;
+}
+
+.profile-form input {
+  width: 100%;
+  padding: 14px;              /* увеличено для соответствия Auth.css */
+  border: 2px solid #e1e1e1;
+  border-radius: 10px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+  background-color: #ffffff;
+  color: #333333;
+}
+
+.profile-form input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.profile-form input.error {
+  border-color: #e53e3e;
+}
+
+.profile-form input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.error-message {
+  display: block;
+  margin-top: 5px;
+  color: #e53e3e;
+  font-size: 14px;
+}
+
+/* Кнопка сохранения (аналог button[type="submit"] в Auth.css) */
+.save-btn {
+  width: 100%;
+  padding: 14px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin-top: 10px;           /* добавили отступ сверху для отделения */
+}
+
+.save-btn:hover {
+  background: #5a67d8;
+}
+
+/* Блок с информацией профиля */
+.profile-info {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+}
+
+.profile-info p {
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.profile-info strong {
+  color: #333;
+  width: 150px;
+  display: inline-block;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.edit-btn,
+.logout-btn {
+  padding: 14px 30px;         /* увеличен вертикальный padding для единообразия */
+  border: none;
+  border-radius: 10px;        /* такой же радиус, как у основных кнопок */
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s, opacity 0.3s;
+  flex: 1;                    /* кнопки занимают равную ширину */
+  max-width: 200px;           /* ограничение, при необходимости можно убрать */
+}
+
+.edit-btn {
+  background: #667eea;
+  color: white;
+}
+
+.logout-btn {
+  background: #e53e3e;
+  color: white;
+}
+
+.edit-btn:hover {
+  background: #5a67d8;
+}
+
+.logout-btn:hover {
+  background: #c53030;
+}
