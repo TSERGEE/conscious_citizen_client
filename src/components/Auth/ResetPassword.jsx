@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PasswordInput from '../PasswordInput/PasswordInput';
 import '../Auth/Auth.css';
+import eyeOpen from '../../assets/icons/eye-open.png';
+import eyeClosed from '../../assets/icons/eye-closed.png';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -82,6 +84,8 @@ const ResetPassword = () => {
           onChange={handleChange}
           required
           error={errors.newPassword}
+          iconShow={<img src={eyeOpen} alt="show" width="20" height="20" />}
+          iconHide={<img src={eyeClosed} alt="hide" width="20" height="20" />}
         />
 
         <PasswordInput
@@ -92,6 +96,8 @@ const ResetPassword = () => {
           onChange={handleChange}
           required
           error={errors.confirmPassword}
+          iconShow={<img src={eyeOpen} alt="show" width="20" height="20" />}
+          iconHide={<img src={eyeClosed} alt="hide" width="20" height="20" />}
         />
 
         <button type="submit">Сохранить пароль</button>
