@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import LeftPanel from './LeftPanel';
 import { useNavigate } from 'react-router-dom';
+import { useMessages } from '../../contexts/MessagesContext';
 import {
   MapContainer,
   TileLayer,
@@ -59,6 +61,8 @@ function useDebounce(value, delay) {
 const MainPage = () => {
   const navigate = useNavigate();
 
+  const { messages } = useMessages();
+
   const [markerPosition, setMarkerPosition] = useState(null);
   const [addressInput, setAddressInput] = useState('');
   const [searchCenter, setSearchCenter] = useState(null);
@@ -69,10 +73,23 @@ const MainPage = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
-  const suggestionsRef = useRef(null); // для отслеживания кликов вне списка
+  const suggestionsRef = useRef(null);
+
+  // Состояние для портала – храним ссылку на элемент #search-root
+  const [searchRoot, setSearchRoot] = useState(null);
 
   // Debounce для адреса (задержка 500 мс)
   const debouncedAddress = useDebounce(addressInput, 500);
+
+  // Эффект для поиска элемента #search-root после монтирования
+  useEffect(() => {
+    const el = document.getElementById('search-root');
+    if (el) {
+      setSearchRoot(el);
+    } else {
+      console.error('search-root not found – проверьте PrivateLayout');
+    }
+  }, []);
 
   // Эффект для запроса подсказок при изменении debouncedAddress
   useEffect(() => {
@@ -85,7 +102,6 @@ const MainPage = () => {
 
       setIsFetchingSuggestions(true);
       try {
-        // Добавляем ", Самара" к запросу и ограничиваем страну Россией
         const query = `${debouncedAddress}, Самара`;
         const response = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ru&limit=5`
@@ -145,7 +161,7 @@ const MainPage = () => {
     setShowSuggestions(false);
   };
 
-  // Прямое геокодирование (поиск координат по адресу) - используется при нажатии кнопки "Найти" или выборе подсказки
+  // Прямое геокодирование (поиск координат по адресу)
   const searchAddress = async (query) => {
     if (!query.trim()) return;
 
@@ -220,7 +236,6 @@ const MainPage = () => {
     if (!addressInput) {
       setShowTooltip(true);
     }
-    // Показать подсказки, если есть
     if (suggestions.length > 0) {
       setShowSuggestions(true);
     }
@@ -228,7 +243,6 @@ const MainPage = () => {
 
   const handleBlur = () => {
     setShowTooltip(false);
-    // Не скрываем подсказки сразу, так как клик по ним может не успеть
   };
 
   // Контент для шапки
@@ -279,8 +293,9 @@ const MainPage = () => {
 
   return (
     <div className="main-page">
-      {ReactDOM.createPortal(headerContent, document.getElementById('search-root'))}
-
+      {/* Портал рендерится только если элемент #search-root найден */}
+      {searchRoot && ReactDOM.createPortal(headerContent, searchRoot)}
+      <LeftPanel />
       <MapContainer center={[53.195873, 50.100193]} zoom={13} className="map-container">
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Standard (OpenStreetMap)">
@@ -302,13 +317,28 @@ const MainPage = () => {
             />
           </LayersControl.BaseLayer>
         </LayersControl>
-
         <MapClickHandler onMapClick={handleMapClick} />
         {markerPosition && (
           <Marker position={markerPosition}>
             <Popup>Выбранное место</Popup>
           </Marker>
         )}
+        {/* Маркеры для всех созданных инцидентов */}
+        {messages
+          .filter(msg => msg.lat && msg.lng) // только с координатами
+          .map(msg => (
+            <Marker key={msg.id} position={[msg.lat, msg.lng]}>
+              <Popup>
+                <div className="message-popup">
+                  <strong>{msg.topic}</strong>
+                  <p>{msg.address}</p>
+                  <button onClick={() => navigate(`/message/${msg.id}`)}>
+                    Подробнее
+                  </button>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
         <MapController center={searchCenter} />
       </MapContainer>
     </div>

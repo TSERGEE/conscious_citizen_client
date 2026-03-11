@@ -1,0 +1,148 @@
+.create-message-page {
+  max-width: 600px;
+  margin: 30px auto 0;   /* верхний отступ после шапки */
+  padding: 30px 20px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 5px;
+  text-align: center;
+}
+
+.section-subtitle {
+  font-size: 18px;
+  font-weight: 500;
+  color: #667eea;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.create-message-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+/* Единый стиль для input и textarea */
+.create-message-form input[type="text"],
+.create-message-form textarea {
+  font-family: inherit;      /* наследует шрифт от body */
+  font-size: 15px;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  transition: border-color 0.3s;
+}
+
+.create-message-form textarea {
+  resize: vertical;          /* только по вертикали */
+  min-height: 100px;         /* минимальная высота */
+}
+
+.create-message-form input[type="text"]:focus,
+.create-message-form textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.create-message-form input.error,
+.create-message-form textarea.error {
+  border-color: #e53e3e;
+}
+
+.error-message {
+  color: #e53e3e;
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+.photo-upload {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.photo-btn {
+  background-color: #f0f0ff;
+  color: #667eea;
+  border: 1px solid #667eea;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.photo-btn:hover {
+  background-color: #e0e0ff;
+}
+
+.photo-name {
+  color: #555;
+  font-size: 14px;
+}
+
+.address-display {
+  background-color: #f9f9f9;
+  padding: 10px 12px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #333;
+}
+
+.radio-group {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.submit-btn {
+  background-color: #48bb78;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 14px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.submit-btn:hover {
+  background-color: #38a169;
+}

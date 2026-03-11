@@ -9,10 +9,16 @@ import MainPage from './components/MainPage/MainPage';
 import Profile from './components/Profile/Profile';
 import ProfileEdit from './components/Profile/ProfileEdit';
 import Rules from './components/Rules/Rules';
-
+import CreateMessagePage from './components/MainPage/CreateMessagePage';
+import MessagePage from './components/MainPage/MessagePage';
+import MyMessagesPage from './components/MessagesPage/MyMessagesPage';
+import AllMessagesPage from './components/MessagesPage/AllMessagesPage';
+import { MessagesProvider } from './contexts/MessagesContext';
 function App() {
   return (
+  
     <BrowserRouter>
+      <MessagesProvider> 
       <Routes>
         
         <Route path="/" element={<Layout><Login /></Layout>} />
@@ -26,9 +32,14 @@ function App() {
         <Route path="/main" element={<PrivateLayout><MainPage /></PrivateLayout>} />
         <Route path="/profile" element={<PrivateLayout><Profile /></PrivateLayout>} />
         <Route path="/profile/edit" element={<PrivateLayout><ProfileEdit /></PrivateLayout>} />
-        
+        <Route path="/create-message" element={<PrivateLayout><CreateMessagePage /></PrivateLayout>} />
+        <Route path="/message/:id" element={<PrivateLayout><MessagePage /></PrivateLayout>} />
+        <Route path="/my-messages" element={<PrivateLayout><MyMessagesPage /></PrivateLayout>} />     
+        <Route path="/all-messages" element={<PrivateLayout><AllMessagesPage /></PrivateLayout>} />   
       </Routes>
+      </MessagesProvider> 
     </BrowserRouter>
+  
   );
 }
 

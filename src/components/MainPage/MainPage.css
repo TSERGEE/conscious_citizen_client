@@ -163,3 +163,37 @@
 .suggestions-list::-webkit-scrollbar-thumb:hover {
   background: #a0a0a0;
 }
+.message-popup {
+  min-width: 200px;
+  padding: 5px;
+}
+
+.message-popup strong {
+  display: block;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.message-popup p {
+  font-size: 12px;
+  color: #666;
+  margin: 5px 0;
+}
+
+.message-popup button {
+  background-color: #667eea;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.message-popup button:hover {
+  background-color: #5a67d8;
+}
