@@ -19,6 +19,7 @@ const PrivateLayout = ({ children }) => {
       {/* Шапка */}
       <header className="private-header">
         <Link to="/main" className="private-logo">Сознательный гражданин</Link>
+        <div id="search-root" className="header-search-container"></div> {/* Контейнер для портала */}
         <div className="hamburger" onClick={toggleMenu}>
           <span></span>
           <span></span>
@@ -32,7 +33,7 @@ const PrivateLayout = ({ children }) => {
       {/* Боковое меню */}
       <div className={`side-menu ${menuOpen ? 'open' : ''}`}>
         <div className="menu-header">
-          <div className="menu-logo">Сознательный гражданин</div>
+          <div className="menu-logo">{/*Сознательный гражданин*/}</div>
           <button className="about-project" onClick={() => handleNavigation('/about')}>
             О ПРОЕКТЕ
           </button>

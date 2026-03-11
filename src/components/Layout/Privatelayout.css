@@ -27,8 +27,14 @@
   cursor: pointer;
 }
 
-.private-logo:hover {
-  text-decoration: underline;
+
+/* Контейнер для портала (поиск и кнопка "Далее") */
+.header-search-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 20px;
 }
 
 .hamburger {
