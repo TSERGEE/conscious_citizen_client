@@ -80,20 +80,61 @@ const ProfileEdit = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Проверяем все поля на ошибки
-    const requiredFields = ['lastName', 'firstName', 'phone', 'street', 'house'];
-    let hasErrors = false;
-    requiredFields.forEach(field => {
-      if (!formData[field]) {
-        setErrors(prev => ({ ...prev, [field]: 'Обязательное поле' }));
-        hasErrors = true;
-      }
-    });
-    if (hasErrors) return;
 
-    // Сохраняем в localStorage
+    const newErrors = {};
+
+    // Фамилия
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Обязательное поле';
+    } else if (!validateCyrillicWithHyphen(formData.lastName)) {
+      newErrors.lastName = 'Только кириллица и дефис';
+    }
+
+    // Имя
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'Обязательное поле';
+    } else if (!validateCyrillicOnly(formData.firstName)) {
+      newErrors.firstName = 'Только кириллица';
+    }
+
+    // Отчество (необязательное, но если есть – проверяем)
+    if (formData.middleName && !validateCyrillicOnly(formData.middleName)) {
+      newErrors.middleName = 'Только кириллица';
+    }
+
+    // Телефон
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Обязательное поле';
+    } else if (!validatePhone(formData.phone)) {
+      newErrors.phone = 'Некорректный формат (+7 XXX XXX XX XX)';
+    }
+
+    // Улица
+    if (!formData.street.trim()) {
+      newErrors.street = 'Обязательное поле';
+    }
+
+    // Дом
+    if (!formData.house.trim()) {
+      newErrors.house = 'Обязательное поле';
+    } else if (!validateHouse(formData.house)) {
+      newErrors.house = 'Только цифры, кириллица, тире, дробь';
+    }
+
+    // Квартира (необязательная)
+    if (formData.apartment && !validateApartment(formData.apartment)) {
+      newErrors.apartment = 'Только цифры и кириллица';
+    }
+
+    setErrors(newErrors);
+
+    // Если есть ошибки – не сохраняем
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
+    // Сохраняем
     localStorage.setItem('userProfile', JSON.stringify(formData));
-    // Переход на экран рубрик (пока просто на профиль)
     navigate('/profile');
   };
 
