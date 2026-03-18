@@ -7,13 +7,19 @@ const LeftPanel = () => {
   const navigate = useNavigate();
   const { messages } = useMessages();
   const currentUserId = 1; // замените на реального пользователя из контекста аутентификации
+  // Фильтруем черновики пользователя
+  const userDrafts = messages.filter(msg => msg.userId === currentUserId && msg.isDraft);
+  //const userMessages = messages.filter(msg => msg.userId === currentUserId);
 
-  const userMessages = messages.filter(msg => msg.userId === currentUserId);
-
-  const parkingMessages = userMessages.filter(msg => msg.category === 'parking');
-  const expiredMessages = userMessages.filter(msg => msg.category === 'expired');
+  const parkingMessages = messages.filter(
+    msg => msg.userId === currentUserId && msg.category === 'parking' && !msg.isDraft
+  );
+  const expiredMessages = messages.filter(
+    msg => msg.userId === currentUserId && msg.category === 'expired' && !msg.isDraft
+  );
 
   const [collapsedSections, setCollapsedSections] = useState({
+    drafts: false,
     parking: false,
     expired: false,
   });
@@ -22,8 +28,12 @@ const LeftPanel = () => {
     setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const handleMessageClick = (id) => {
-    navigate(`/message/${id}`);
+  const handleMessageClick = (id, isDraft) => {
+    if (isDraft) {
+      navigate(`/edit-draft/${id}`);
+    } else {
+      navigate(`/message/${id}`);
+    }
   };
 
   return (
@@ -32,6 +42,35 @@ const LeftPanel = () => {
         <h3>Мои сообщения</h3>
       </div>
       <div className="feed-sections">
+        <div className="category-section">
+          <div className="category-header" onClick={() => toggleSection('drafts')}>
+            <span>Черновики</span>
+            <span className="collapse-icon">{collapsedSections.drafts ? '▼' : '▲'}</span>
+          </div>
+          {!collapsedSections.drafts && (
+            <div className="category-messages">
+              {userDrafts.length > 0 ? (
+                userDrafts.map(msg => (
+                  <div
+                    key={msg.id}
+                    className="message-item"
+                    onClick={() => handleMessageClick(msg.id, true)}
+                  >
+                    <img src={msg.photos[0]} alt="preview" className="message-thumb" />
+                    <div className="message-info">
+                      <div className="message-topic">{msg.topic}</div>
+                      <div className="message-date">
+                        {new Date(msg.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="no-messages">Нет черновиков</div>
+              )}
+            </div>
+          )}
+        </div>
         {/* Парковки */}
         <div className="category-section">
           <div className="category-header" onClick={() => toggleSection('parking')}>

@@ -1,27 +1,32 @@
+// pages/EditDraftPage/EditDraftPage.js
 import React, { useState, useRef, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
-import './CreateMessagePage.css';
+import './EditDraftPage.css'; // можно использовать те же стили, что и CreateMessagePage
 
-const CreateMessagePage = () => {
-  const location = useLocation();
+const EditDraftPage = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { addMessage } = useMessages();
-  const { lat, lng, address } = location.state || {};
+  const { getMessage, updateMessage, publishDraft } = useMessages();
+  const draft = getMessage(Number(id));
 
+  // Проверка, что черновик существует и принадлежит пользователю (здесь userId = 1)
   useEffect(() => {
-    if (!address) {
-      alert('Сначала выберите место на карте');
-      navigate('/main');
+    if (!draft || draft.userId !== 1) {
+      alert('Черновик не найден');
+      navigate('/drafts');
     }
-  }, [address, navigate]);
+  }, [draft, navigate]);
 
-  const [topic, setTopic] = useState('');
-  const [description, setDescription] = useState('');
+  const [topic, setTopic] = useState(draft?.topic || '');
+  const [description, setDescription] = useState(draft?.description || '');
   const [photo, setPhoto] = useState(null);
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState(draft?.category || '');
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
+
+  // Если фото уже есть в черновике, показываем его
+  const [existingPhoto] = useState(draft?.photos?.[0] || null);
 
   const handlePhotoClick = () => fileInputRef.current.click();
 
@@ -38,7 +43,7 @@ const CreateMessagePage = () => {
     return newErrors;
   };
 
-  // Публикация сообщения (isDraft = false)
+  // Сохранить как опубликованное сообщение
   const handlePublish = (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
@@ -47,25 +52,27 @@ const CreateMessagePage = () => {
       return;
     }
 
-    const photoUrl = photo ? URL.createObjectURL(photo) : 'https://via.placeholder.com/100';
+    const photoUrl = photo
+      ? URL.createObjectURL(photo)
+      : existingPhoto || 'https://via.placeholder.com/100';
 
-    const newMessage = {
+    const updatedMessage = {
       topic,
       description,
       category,
       photos: [photoUrl],
-      address,
-      lat,
-      lng,
-      userId: 1, // заменить на реальный ID пользователя
+      address: draft.address,
+      lat: draft.lat,
+      lng: draft.lng,
+      userId: 1,
       isDraft: false, // публикуем
     };
 
-    const messageId = addMessage(newMessage);
-    navigate(`/message/${messageId}`);
+    updateMessage(draft.id, updatedMessage);
+    navigate(`/message/${draft.id}`);
   };
 
-  // Сохранение как черновик (isDraft = true)
+  // Сохранить как черновик (обновить, но оставить isDraft = true)
   const handleSaveDraft = (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
@@ -74,34 +81,33 @@ const CreateMessagePage = () => {
       return;
     }
 
-    const photoUrl = photo ? URL.createObjectURL(photo) : 'https://via.placeholder.com/100';
+    const photoUrl = photo
+      ? URL.createObjectURL(photo)
+      : existingPhoto || 'https://via.placeholder.com/100';
 
-    const draftMessage = {
+    const updatedMessage = {
       topic,
       description,
       category,
       photos: [photoUrl],
-      address,
-      lat,
-      lng,
-      userId: 1, // заменить на реальный ID пользователя
-      isDraft: true, // черновик
+      address: draft.address,
+      lat: draft.lat,
+      lng: draft.lng,
+      userId: 1,
+      isDraft: true,
     };
 
-    addMessage(draftMessage);
-    // Можно перенаправить на страницу черновиков или на главную
-    navigate('/drafts'); // например, на страницу списка черновиков
+    updateMessage(draft.id, updatedMessage);
+    navigate('/drafts');
   };
 
-  if (!address) return null;
+  if (!draft) return null;
 
   return (
-    <div className="create-message-page">
-      <h1 className="page-title">Создание сообщения</h1>
-      <h2 className="section-subtitle">Опишите проблему</h2>
-
+    <div className="create-message-page"> {/* используем те же стили */}
+      <h1 className="page-title">Редактирование черновика</h1>
       <form onSubmit={handlePublish} className="create-message-form">
-        {/* Тема */}
+        {/* поля формы (аналогично CreateMessagePage) */}
         <div className="form-group">
           <label htmlFor="topic">Тема сообщения</label>
           <input
@@ -114,7 +120,6 @@ const CreateMessagePage = () => {
           {errors.topic && <span className="error-message">{errors.topic}</span>}
         </div>
 
-        {/* Текст сообщения */}
         <div className="form-group">
           <label htmlFor="description">Текст сообщения</label>
           <textarea
@@ -127,12 +132,11 @@ const CreateMessagePage = () => {
           {errors.description && <span className="error-message">{errors.description}</span>}
         </div>
 
-        {/* Фото */}
         <div className="form-group">
           <label>Фото</label>
           <div className="photo-upload">
             <button type="button" onClick={handlePhotoClick} className="photo-btn">
-              Добавить фото
+              {existingPhoto ? 'Заменить фото' : 'Добавить фото'}
             </button>
             <input
               type="file"
@@ -142,16 +146,19 @@ const CreateMessagePage = () => {
               style={{ display: 'none' }}
             />
             {photo && <span className="photo-name">{photo.name}</span>}
+            {!photo && existingPhoto && (
+              <div className="existing-photo">
+                <img src={existingPhoto} alt="текущее" className="photo-thumb" />
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Адрес (только для чтения) */}
         <div className="form-group">
           <label>Адрес</label>
-          <div className="address-display">{address}</div>
+          <div className="address-display">{draft.address}</div>
         </div>
 
-        {/* Рубрика */}
         <div className="form-group">
           <label>Рубрика</label>
           <div className="radio-group">
@@ -162,7 +169,7 @@ const CreateMessagePage = () => {
                 value="parking"
                 checked={category === 'parking'}
                 onChange={(e) => setCategory(e.target.value)}
-              />
+              />{' '}
               Парковка
             </label>
             <label className="radio-label">
@@ -172,20 +179,17 @@ const CreateMessagePage = () => {
                 value="expired"
                 checked={category === 'expired'}
                 onChange={(e) => setCategory(e.target.value)}
-              />
+              />{' '}
               Просроченные продукты
             </label>
           </div>
           {errors.category && <span className="error-message">{errors.category}</span>}
         </div>
 
-        {/* Кнопки действий */}
         <div className="form-actions">
-          <button type="submit" className="submit-btn">
-            Опубликовать сообщение
-          </button>
+          <button type="submit" className="submit-btn">Опубликовать</button>
           <button type="button" onClick={handleSaveDraft} className="save-draft-btn">
-            Сохранить как черновик
+            Сохранить черновик
           </button>
         </div>
       </form>
@@ -193,4 +197,4 @@ const CreateMessagePage = () => {
   );
 };
 
-export default CreateMessagePage;
+export default EditDraftPage;

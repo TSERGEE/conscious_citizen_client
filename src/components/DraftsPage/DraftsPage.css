@@ -1,0 +1,32 @@
+.drafts-page {
+  border-radius: 20px;
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+.page-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background-color: #667eea;
+  border-radius: 2px;
+}
+.drafts-page {
+  background-color: #f0f2f5;
+  min-height: 100vh;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.page-title {
+  text-align: center;
+  margin: 0 0 30px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #333;
+}

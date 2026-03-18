@@ -146,12 +146,6 @@
 .submit-btn:hover {
   background-color: #38a169;
 }
-.form-actions {
-  display: flex;
-  gap: 15px;
-  margin-top: 10px;
-}
-
 .save-draft-btn {
   background-color: #667eea;
   color: white;
@@ -162,7 +156,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.3s;
-  flex: 1;
+  margin-top: 10px;
 }
 
 .save-draft-btn:hover {

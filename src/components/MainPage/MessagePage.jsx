@@ -6,8 +6,24 @@ import './MessagePage.css';
 const MessagePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getMessage } = useMessages();
-  const message = getMessage(Number(id)); // id в контексте хранятся как числа
+  const { getMessage, addMessage } = useMessages();
+  const message = getMessage(Number(id));
+
+  // Обработчик для кнопки "Сохранить в черновики"
+  const handleSaveAsDraft = () => {
+    if (!message) return;
+
+    // Создаём копию сообщения с флагом черновика
+    const draftCopy = {
+      ...message,
+      id: Date.now(),                 // новый уникальный ID
+      isDraft: true,                   // помечаем как черновик
+      createdAt: new Date().toISOString(), // обновляем дату создания
+    };
+
+    addMessage(draftCopy);
+    alert('Сообщение сохранено в черновики');
+  };
 
   if (!message) {
     return (
@@ -21,7 +37,7 @@ const MessagePage = () => {
   return (
     <div className="message-page">
       <h1 className="page-title">Новое сообщение</h1>
-      
+
       <div className="message-content">
         <div className="message-field">
           <label>Тема сообщения</label>
@@ -50,10 +66,22 @@ const MessagePage = () => {
       </div>
 
       <div className="action-panel">
-        <button className="action-btn" title="Сохранить в черновики">📥</button>
-        <button className="action-btn" title="Сохранить в документы">💾</button>
-        <button className="action-btn" title="Отправить на email">📧</button>
-        <button className="action-btn" title="Печать">🖨️</button>
+        <button
+          className="action-btn"
+          title="Сохранить в черновики"
+          onClick={handleSaveAsDraft}
+        >
+          📥
+        </button>
+        <button className="action-btn" title="Сохранить в документы">
+          💾
+        </button>
+        <button className="action-btn" title="Отправить на email">
+          📧
+        </button>
+        <button className="action-btn" title="Печать">
+          🖨️
+        </button>
       </div>
     </div>
   );

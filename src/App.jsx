@@ -14,6 +14,8 @@ import MessagePage from './components/MainPage/MessagePage';
 import MyMessagesPage from './components/MessagesPage/MyMessagesPage';
 import AllMessagesPage from './components/MessagesPage/AllMessagesPage';
 import { MessagesProvider } from './contexts/MessagesContext';
+import DraftsPage from './components/DraftsPage/DraftsPage';
+import EditDraftPage from './components/DraftsPage/EditDraftPage';
 function App() {
   return (
   
@@ -36,6 +38,8 @@ function App() {
         <Route path="/message/:id" element={<PrivateLayout><MessagePage /></PrivateLayout>} />
         <Route path="/my-messages" element={<PrivateLayout><MyMessagesPage /></PrivateLayout>} />     
         <Route path="/all-messages" element={<PrivateLayout><AllMessagesPage /></PrivateLayout>} />   
+        <Route path="/drafts" element={<PrivateLayout><DraftsPage /></PrivateLayout>} />
+        <Route path="/edit-draft/:id" element={<PrivateLayout><EditDraftPage /></PrivateLayout>} />
       </Routes>
       </MessagesProvider> 
     </BrowserRouter>
