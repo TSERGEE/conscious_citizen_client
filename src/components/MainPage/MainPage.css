@@ -197,3 +197,31 @@
 .message-popup button:hover {
   background-color: #5a67d8;
 }
+.input-container {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.input-container input {
+  width: 100%;
+  padding-right: 30px; /* отступ для иконки */
+  box-sizing: border-box;
+}
+
+.clear-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 18px;
+  color: #999;
+  user-select: none;
+  transition: color 0.2s;
+  z-index: 10;
+}
+
+.clear-icon:hover {
+  color: #333;
+}

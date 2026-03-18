@@ -244,19 +244,40 @@ const MainPage = () => {
   const handleBlur = () => {
     setShowTooltip(false);
   };
-
+  
+  const handleClearInput = () => {
+    setAddressInput('');
+    setMarkerPosition(null);
+    setSearchCenter(null);
+    setShowSuggestions(false);
+  };
   // Контент для шапки
   const headerContent = (
     <div className="header-search-block">
       <div className="address-input-wrapper" ref={suggestionsRef}>
-        <input
-          type="text"
-          placeholder="Адрес события"
-          value={addressInput}
-          onChange={(e) => setAddressInput(e.target.value)}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-        />
+        {/* + Оборачиваем input и иконку в дополнительный контейнер */}
+        <div className="input-container">
+          <input
+            type="text"
+            placeholder="Адрес события"
+            value={addressInput}
+            onChange={(e) => setAddressInput(e.target.value)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+          />
+          {/* + Иконка крестика появляется только при наличии текста */}
+          {addressInput && (
+            <span
+              className="clear-icon"
+              onClick={handleClearInput}
+              role="button"
+              tabIndex={0}
+              aria-label="Очистить поле"
+            >
+              ✕
+            </span>
+          )}
+        </div>
         {showTooltip && (
           <div className="tooltip">
             Введите адрес вручную
