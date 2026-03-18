@@ -51,9 +51,9 @@ const PrivateLayout = ({ children }) => {
           <button className="feedback-btn" onClick={() => handleNavigation('/feedback')}>
             ОБРАТНАЯ СВЯЗЬ
           </button>
-          <button className="create-message-btn" onClick={() => handleNavigation('/categories')}>
+          {/*<button className="create-message-btn" onClick={() => handleNavigation('/categories')}>
             Создать сообщение
-          </button>
+          </button>*/}
         </div>
       </div>
 
