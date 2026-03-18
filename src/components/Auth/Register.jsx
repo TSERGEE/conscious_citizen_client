@@ -38,9 +38,9 @@ const Register = () => {
     if (login.startsWith('.') || login.endsWith('.')) {
       return 'Логин не может начинаться или заканчиваться точкой';
     }
-    if (login.includes('..')) {
-      return 'Логин не может содержать две точки подряд';
-    }
+    //if (login.includes('..')) {
+    //  return 'Логин не может содержать две точки подряд';
+    //}
     return '';
   };
 

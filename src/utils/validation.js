@@ -3,6 +3,11 @@ export const validateCyrillic = (value, allowHyphen = false) => {
   const regex = allowHyphen ? /^[А-Яа-яЁё\s-]+$/ : /^[А-Яа-яЁё\s]+$/;
   return regex.test(value);
 };
+// Только кириллица (без пробелов и дефиса)
+export const validateCyrillicOnly = (value) => /^[А-Яа-яЁё]+$/.test(value);
+
+// Кириллица и дефис (без пробелов) – для фамилии
+export const validateCyrillicWithHyphen = (value) => /^[А-Яа-яЁё-]+$/.test(value);
 
 // Для дома: цифры, буквы кириллицы, тире, дробь
 export const validateHouse = (value) => {
@@ -27,6 +32,7 @@ export const formatPhone = (value) => {
 };
 
 export const validatePhone = (value) => {
-  const digits = value.replace(/\D/g, '');
-  return digits.length === 11; // для РФ 11 цифр (включая 7)
+  // Точный формат: +X XXX XXX XX XX (X – цифры)
+  const phoneRegex = /^\+\d \d{3} \d{3} \d{2} \d{2}$/;
+  return phoneRegex.test(value);
 };

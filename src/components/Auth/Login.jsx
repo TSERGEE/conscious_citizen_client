@@ -8,7 +8,7 @@ import eyeClosed from '../../assets/icons/eye-closed.png';
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
+    login: '',
     password: ''
   });
   const [errors, setErrors] = useState({});
@@ -22,21 +22,26 @@ const Login = () => {
     }
   };
 
-  // Валидация email (по правилам регистрации)
-  const validateEmail = (email) => {
-    if (!email) return 'Email или телефон обязателен';
-    // Проверка на email (упрощённо, можно добавить проверку телефона позже)
-    const re = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-    if (!re.test(email)) {
-      return 'Некорректный email';
+  // Валидация логина по ТЗ
+  const validateLogin = (login) => {
+    if (!login.trim()) return 'Логин обязателен';
+
+    // Разрешённые символы: латинские буквы, цифры, дефис, подчёркивание, точка
+    const allowedPattern = /^[a-zA-Z0-9._-]+$/;
+    if (!allowedPattern.test(login)) {
+      return 'Логин может содержать только латинские буквы, цифры, дефис (-), подчёркивание (_) и точку (.)';
     }
-    const localPart = email.split('@')[0];
-    if (localPart.startsWith('.') || localPart.endsWith('.')) {
-      return 'Email не может начинаться или заканчиваться точкой до @';
+
+    // Запрет на @ и пробел (уже покрыто регуляркой, но на всякий случай)
+    if (login.includes('@') || login.includes(' ')) {
+      return 'Логин не может содержать @ или пробел';
     }
-    if (localPart.includes('..')) {
-      return 'Email не может содержать две точки подряд до @';
+
+    // Не начинается и не заканчивается точкой
+    if (login.startsWith('.') || login.endsWith('.')) {
+      return 'Логин не может начинаться или заканчиваться точкой';
     }
+
     return '';
   };
 
@@ -53,15 +58,15 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const emailError = validateEmail(formData.email);
+    const loginError = validateLogin(formData.login);
     const passwordError = validatePassword(formData.password);
 
     setErrors({
-      email: emailError,
+      login: loginError,
       password: passwordError
     });
 
-    if (emailError || passwordError) return;
+    if (loginError || passwordError) return;
 
     // Имитация отправки на сервер
     try {
@@ -84,17 +89,17 @@ const Login = () => {
       <div className="description">Для продолжения Вам необходимо выполнить вход.</div>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="email">Телефон или email</label>
+          <label htmlFor="login">Логин</label>
           <input
-            type="text" // используем text, чтобы можно было вводить и телефон, и email
-            id="email"
-            name="email"
-            value={formData.email}
+            type="text"
+            id="login"
+            name="login"
+            value={formData.login}
             onChange={handleChange}
-            className={errors.email ? 'error' : ''}
+            className={errors.login ? 'error' : ''}
             required
           />
-          {errors.email && <span className="error-message">{errors.email}</span>}
+          {errors.login && <span className="error-message">{errors.login}</span>}
         </div>
 
         <PasswordInput

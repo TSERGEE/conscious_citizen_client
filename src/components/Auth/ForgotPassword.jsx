@@ -7,7 +7,6 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
 
-  // Функция валидации email (полностью соответствует правилам из регистрации)
   const validateEmail = (email) => {
     if (!email) return 'Email обязателен';
     // Проверка на соответствие формату email с допустимыми спецсимволами

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../Auth/Auth.css';
 
-// По умолчанию используются emoji-иконки (можно заменить на свои)
+// По умолчанию используются emoji-иконки
 const DefaultEyeOpen = () => <span style={{ fontSize: '1.2rem' }}>👁️</span>;
 const DefaultEyeClosed = () => <span style={{ fontSize: '1.2rem' }}>🙈</span>;
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { streets } from '../../data/streets';
-import { validateCyrillic, validateHouse, validateApartment, validatePhone, formatPhone } from '../../utils/validation';
+import { validateHouse, validateApartment, validatePhone, formatPhone, validateCyrillicWithHyphen, validateCyrillicOnly } from '../../utils/validation';
 import './Profile.css';
 
 const ProfileEdit = () => {
@@ -50,14 +50,14 @@ const ProfileEdit = () => {
     switch (name) {
       case 'lastName':
         if (!value.trim()) error = 'Обязательное поле';
-        else if (!validateCyrillic(value, true)) error = 'Только кириллица, пробел или дефис';
+        else if (!validateCyrillicWithHyphen(value)) error = 'Только кириллица и дефис';
         break;
       case 'firstName':
         if (!value.trim()) error = 'Обязательное поле';
-        else if (!validateCyrillic(value)) error = 'Только кириллица';
+        else if (!validateCyrillicOnly(value)) error = 'Только кириллица';
         break;
       case 'middleName':
-        if (value && !validateCyrillic(value)) error = 'Только кириллица';
+        if (value && !validateCyrillicOnly(value)) error = 'Только кириллица';
         break;
       case 'phone':
         if (!value.trim()) error = 'Обязательное поле';
@@ -99,7 +99,7 @@ const ProfileEdit = () => {
 
   // Фильтрация улиц для подсказок
   const filteredStreets = streets.filter(street =>
-    street.toLowerCase().includes(formData.street.toLowerCase())
+    street.toLowerCase().startsWith(formData.street.toLowerCase())
   );
 
   return (
