@@ -56,6 +56,13 @@ button:focus-visible {
   font-style: normal;
   font-display: swap;
 }
+@font-face {
+  font-family: 'NFS Font';
+  src: url('/src/assets/fonts/NFS Font.ttf') format('ttf');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 @media (prefers-color-scheme: light) {
   :root {
     color: #ffffff;

@@ -131,10 +131,10 @@
 }
 
 .submit-btn {
-  background-color: #48bb78;
+  background-color: #667eea;
   color: white;
   border: none;
-  border-radius: 30px;
+  border-radius: 8px;
   padding: 14px 20px;
   font-size: 16px;
   font-weight: 600;
@@ -144,25 +144,27 @@
 }
 
 .submit-btn:hover {
-  background-color: #38a169;
+  background-color: #5a67d8;
 }
 .form-actions {
   display: flex;
   gap: 15px;
   margin-top: 10px;
+  border-radius: 8px;
 }
 
 .save-draft-btn {
   background-color: #667eea;
   color: white;
   border: none;
-  border-radius: 30px;
-  padding: 14px 20px;
+  border-radius: 20px;
+  padding: 8px 16px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.3s;
-  flex: 1;
+  margin-top: 10px;
+  display: flex;
 }
 
 .save-draft-btn:hover {

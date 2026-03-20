@@ -43,9 +43,9 @@ const PrivateLayout = ({ children }) => {
         <div className="menu-items">
           <button onClick={() => handleNavigation('/my-messages')}>МОИ СООБЩЕНИЯ</button>
           <button onClick={() => handleNavigation('/all-messages')}>ВСЕ СООБЩЕНИЯ</button>
+          <button onClick={() => handleNavigation('/drafts')}>ЧЕРНОВИКИ</button>
           <button onClick={() => handleNavigation('/notifications')}>УВЕДОМЛЕНИЯ</button>
           <button onClick={() => handleNavigation('/profile')}>ПРОФИЛЬ</button>
-          <button onClick={() => handleNavigation('/drafts')}>ЧЕРНОВИКИ</button>
         </div>
 
         <div className="menu-footer">

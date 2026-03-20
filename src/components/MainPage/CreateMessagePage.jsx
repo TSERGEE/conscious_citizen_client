@@ -184,10 +184,11 @@ const CreateMessagePage = () => {
           <button type="submit" className="submit-btn">
             Опубликовать сообщение
           </button>
-          <button type="button" onClick={handleSaveDraft} className="save-draft-btn">
+          <button type="submit" onClick={handleSaveDraft} className="submit-btn">
             Сохранить как черновик
-          </button>
+        </button> 
         </div>
+        
       </form>
     </div>
   );

@@ -188,7 +188,7 @@ const EditDraftPage = () => {
 
         <div className="form-actions">
           <button type="submit" className="submit-btn">Опубликовать</button>
-          <button type="button" onClick={handleSaveDraft} className="save-draft-btn">
+          <button type="submit" onClick={handleSaveDraft} className="submit-btn">
             Сохранить черновик
           </button>
         </div>
