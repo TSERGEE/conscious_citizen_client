@@ -18,7 +18,7 @@ import 'leaflet-defaulticon-compatibility';
 import './MainPage.css';
 import L from 'leaflet';
 const parkingIcon = new L.Icon({
-  iconUrl: '/images/parking2.png', // путь к иконке
+  iconUrl: '/images/parking31.png', // путь к иконке
   shadowUrl: '/images/shadow.png',
   iconSize: [48, 48],
   iconAnchor: [16, 48],
@@ -27,7 +27,7 @@ const parkingIcon = new L.Icon({
 });
 
 const foodIcon = new L.Icon({
-  iconUrl: '/images/food2.png',
+  iconUrl: '/images/food31.png',
   shadowUrl: '/images/shadow.png',
   iconSize: [48, 48],
   iconAnchor: [16, 48],
