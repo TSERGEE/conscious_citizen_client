@@ -16,7 +16,34 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 import 'leaflet-defaulticon-compatibility';
 import './MainPage.css';
+import L from 'leaflet';
+const parkingIcon = new L.Icon({
+  iconUrl: '/images/parking2.png', // путь к иконке
+  shadowUrl: '/images/shadow.png',
+  iconSize: [48, 48],
+  iconAnchor: [16, 48],
+  popupAnchor: [0, -48],
+  shadowSize: [48, 48],
+});
 
+const foodIcon = new L.Icon({
+  iconUrl: '/images/food2.png',
+  shadowUrl: '/images/shadow.png',
+  iconSize: [48, 48],
+  iconAnchor: [16, 48],
+  popupAnchor: [0, -48],
+  shadowSize: [48, 48],
+});
+const iconMap = {
+  parking: parkingIcon,
+  food: foodIcon,
+};
+
+const getIconByType = (type) => {
+  if (type === 'parking') return parkingIcon;
+  if (type === 'expired') return foodIcon;
+  return new L.Icon.Default();
+};
 // Компонент для обработки кликов по карте
 function MapClickHandler({ onMapClick }) {
   useMapEvents({
@@ -346,9 +373,9 @@ const MainPage = () => {
         )}
         {/* Маркеры для всех созданных инцидентов */}
         {messages
-          .filter(msg => msg.lat && msg.lng) // только с координатами
+          .filter(msg => msg.lat && msg.lng && !msg.isDraft) // только с координатами
           .map(msg => (
-            <Marker key={msg.id} position={[msg.lat, msg.lng]}>
+            <Marker key={msg.id} position={[msg.lat, msg.lng]} icon={getIconByType(msg.type)}>
               <Popup>
                 <div className="message-popup">
                   <strong>{msg.topic}</strong>

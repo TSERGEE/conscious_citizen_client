@@ -6,27 +6,9 @@ import './LeftPanel.css';
 const LeftPanel = () => {
   const navigate = useNavigate();
   const { messages } = useMessages();
-  const currentUserId = 1; // замените на реального пользователя из контекста аутентификации
-  // Фильтруем черновики пользователя
-  const userDrafts = messages.filter(msg => msg.userId === currentUserId && msg.isDraft);
-  //const userMessages = messages.filter(msg => msg.userId === currentUserId);
+  const currentUserId = 1;
 
-  const parkingMessages = messages.filter(
-    msg => msg.userId === currentUserId && msg.category === 'parking' && !msg.isDraft
-  );
-  const expiredMessages = messages.filter(
-    msg => msg.userId === currentUserId && msg.category === 'expired' && !msg.isDraft
-  );
-
-  const [collapsedSections, setCollapsedSections] = useState({
-    drafts: false,
-    parking: false,
-    expired: false,
-  });
-
-  const toggleSection = (section) => {
-    setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
+  const [filter, setFilter] = useState('all'); // all | parking | expired | drafts
 
   const handleMessageClick = (id, isDraft) => {
     if (isDraft) {
@@ -36,90 +18,85 @@ const LeftPanel = () => {
     }
   };
 
+  // Универсальный список
+  const filteredMessages = [...messages]
+    .filter(msg => msg.userId === currentUserId)
+    .filter(msg => {
+      if (filter === 'all') return !msg.isDraft;
+      if (filter === 'drafts') return msg.isDraft;
+      return msg.type === filter && !msg.isDraft;
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
   return (
     <div className="message-feed-panel">
+      
       <div className="feed-header">
         <h3>Мои сообщения</h3>
       </div>
-      <div className="feed-sections">
-        <div className="category-section">
-          <div className="category-header" onClick={() => toggleSection('drafts')}>
-            <span>Черновики</span>
-            <span className="collapse-icon">{collapsedSections.drafts ? '▼' : '▲'}</span>
-          </div>
-          {!collapsedSections.drafts && (
-            <div className="category-messages">
-              {userDrafts.length > 0 ? (
-                userDrafts.map(msg => (
-                  <div
-                    key={msg.id}
-                    className="message-item"
-                    onClick={() => handleMessageClick(msg.id, true)}
-                  >
-                    <img src={msg.photos[0]} alt="preview" className="message-thumb" />
-                    <div className="message-info">
-                      <div className="message-topic">{msg.topic}</div>
-                      <div className="message-date">
-                        {new Date(msg.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="no-messages">Нет черновиков</div>
-              )}
-            </div>
-          )}
-        </div>
-        {/* Парковки */}
-        <div className="category-section">
-          <div className="category-header" onClick={() => toggleSection('parking')}>
-            <span>Парковки</span>
-            <span className="collapse-icon">{collapsedSections.parking ? '▼' : '▲'}</span>
-          </div>
-          {!collapsedSections.parking && (
-            <div className="category-messages">
-              {parkingMessages.length > 0 ? (
-                parkingMessages.map(msg => (
-                  <div key={msg.id} className="message-item" onClick={() => handleMessageClick(msg.id)}>
-                    <img src={msg.photos[0]} alt="preview" className="message-thumb" />
-                    <div className="message-info">
-                      <div className="message-topic">{msg.topic}</div>
-                      <div className="message-date">{new Date(msg.createdAt).toLocaleDateString()}</div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="no-messages">Нет сообщений</div>
-              )}
-            </div>
-          )}
-        </div>
 
-        {/* Просроченные продукты */}
-        <div className="category-section">
-          <div className="category-header" onClick={() => toggleSection('expired')}>
-            <span>Просроченные продукты</span>
-            <span className="collapse-icon">{collapsedSections.expired ? '▼' : '▲'}</span>
-          </div>
-          {!collapsedSections.expired && (
-            <div className="category-messages">
-              {expiredMessages.length > 0 ? (
-                expiredMessages.map(msg => (
-                  <div key={msg.id} className="message-item" onClick={() => handleMessageClick(msg.id)}>
-                    <img src={msg.photos[0]} alt="preview" className="message-thumb" />
-                    <div className="message-info">
-                      <div className="message-topic">{msg.topic}</div>
-                      <div className="message-date">{new Date(msg.createdAt).toLocaleDateString()}</div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="no-messages">Нет сообщений</div>
-              )}
+      {/* ФИЛЬТР */}
+      <div className="filter-buttons">
+        <button onClick={() => setFilter('all')}>
+          Все
+        </button>
+        <button onClick={() => setFilter('parking')}>
+          Парковка
+        </button>
+        <button onClick={() => setFilter('expired')}>
+          Продукты
+        </button>
+        <button onClick={() => setFilter('drafts')}>
+          Черновики
+        </button>
+      </div>
+
+      {/* СПИСОК */}
+      <div className="category-messages">
+        {filteredMessages.length > 0 ? (
+          filteredMessages.map(msg => (
+            <div
+              key={msg.id}
+              className="message-item"
+              onClick={() => handleMessageClick(msg.id, msg.isDraft)}
+            >
+              <img
+                src={msg.photos[0]}
+                alt="preview"
+                className="message-thumb"
+              />
+
+              <div className="message-info">
+                <div className="message-topic">
+                  {msg.topic}
+                </div>
+
+                <div className="message-date">
+                  {new Date(msg.createdAt).toLocaleDateString()}
+                </div>
+
+                {/* Показываем тип */}
+                <div
+                    className={`message-type ${
+                      msg.isDraft
+                        ? 'draft'
+                        : msg.type === 'parking'
+                        ? 'parking'
+                        : 'expired'
+                    }`}
+                  >
+                  {msg.isDraft
+                    ? 'Черновик'
+                    : msg.type === 'parking'
+                    ? 'Парковка'
+                    : 'Просрочка'}
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          ))
+        ) : (
+          <div className="no-messages">Нет сообщений</div>
+        )}
       </div>
     </div>
   );

@@ -52,7 +52,7 @@ const CreateMessagePage = () => {
     const newMessage = {
       topic,
       description,
-      category,
+      type: category,
       photos: [photoUrl],
       address,
       lat,
@@ -79,7 +79,7 @@ const CreateMessagePage = () => {
     const draftMessage = {
       topic,
       description,
-      category,
+      type: category,
       photos: [photoUrl],
       address,
       lat,
@@ -184,7 +184,7 @@ const CreateMessagePage = () => {
           <button type="submit" className="submit-btn">
             Опубликовать сообщение
           </button>
-          <button type="submit" onClick={handleSaveDraft} className="submit-btn">
+          <button type="button" onClick={handleSaveDraft} className="submit-btn">
             Сохранить как черновик
         </button> 
         </div>

@@ -27,8 +27,8 @@ const MessagesList = ({ messages, isDraftList = false }) => {
         >
           {/* остальное содержимое карточки без изменений */}
           <div className="message-card-header">
-            <span className={`category-badge ${msg.category}`}>
-              {msg.category === 'parking' ? 'Парковка' : 'Просроченные продукты'}
+            <span className={`category-badge ${msg.type}`}>
+              {msg.type === 'parking' ? 'Парковка' : 'Просроченные продукты'}
             </span>
             <span className="message-date">
               {new Date(msg.createdAt).toLocaleDateString()}
