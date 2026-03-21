@@ -21,8 +21,8 @@ const parkingIcon = new L.Icon({
   iconUrl: '/images/parking31.png', // путь к иконке
   shadowUrl: '/images/shadow.png',
   iconSize: [48, 48],
-  iconAnchor: [16, 48],
-  popupAnchor: [0, -48],
+  iconAnchor: [25, 48],
+  popupAnchor: [0, -50],
   shadowSize: [48, 48],
 });
 
@@ -30,8 +30,8 @@ const foodIcon = new L.Icon({
   iconUrl: '/images/food31.png',
   shadowUrl: '/images/shadow.png',
   iconSize: [48, 48],
-  iconAnchor: [16, 48],
-  popupAnchor: [0, -48],
+  iconAnchor: [25, 48],
+  popupAnchor: [0, -50],
   shadowSize: [48, 48],
 });
 const iconMap = {
