@@ -220,3 +220,66 @@
   text-align: center;
   width: 100%;
 }
+/* Контейнер поля ввода — для позиционирования списка */
+.profile-container .input-wrapper {
+  position: relative;
+}
+
+/* Список подсказок — абсолютное позиционирование, цвета из темы */
+.profile-container .suggestions-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--bg-card);      /* фон, как у карточек */
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  box-shadow: var(--shadow-md);
+}
+
+/* Элемент списка */
+.profile-container .suggestion-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.2s;
+}
+
+.profile-container .suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.profile-container .suggestion-item:hover {
+  background: var(--accent-light);
+}
+
+/* Состояние загрузки */
+.profile-container .suggestion-item.loading {
+  color: var(--text-muted);
+  cursor: default;
+  text-align: center;
+}
+
+/* Дополнительно: стили для поля ввода, если требуется */
+.profile-container .input-wrapper input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.profile-container .input-wrapper input:focus {
+  border-color: var(--accent);
+  outline: none;
+}

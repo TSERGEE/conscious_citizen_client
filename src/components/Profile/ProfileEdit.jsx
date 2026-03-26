@@ -1,19 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { streets } from '../../data/streets';
 import { validateHouse, validateApartment, validatePhone, validateCyrillicWithHyphen, validateCyrillicOnly, normalizeAndFormatPhone } from '../../utils/validation';
 import './Profile.css';
+
+// Простейший debounce hook
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const streetSuggestionsRef = useRef(null);
+
   // Состояние формы
   const [formData, setFormData] = useState({
     lastName: '',
     firstName: '',
     middleName: '',
     phone: '',
-    city: 'Самара', // по умолчанию
+    city: 'Самара',
     street: '',
     house: '',
     apartment: '',
@@ -23,7 +36,16 @@ const ProfileEdit = () => {
   // Ошибки валидации
   const [errors, setErrors] = useState({});
 
-  // При монтировании загружаем сохранённые данные (если есть)
+  // Состояния для подсказок улиц
+  const [streetSuggestions, setStreetSuggestions] = useState([]);
+  const [showStreetSuggestions, setShowStreetSuggestions] = useState(false);
+  const [isFetchingStreets, setIsFetchingStreets] = useState(false);
+  const [selectedStreet, setSelectedStreet] = useState(false);
+
+  // Debounce для ввода улицы
+  const debouncedStreet = useDebounce(formData.street, 500);
+
+  // При монтировании загружаем сохранённые данные
   useEffect(() => {
     const saved = localStorage.getItem('userProfile');
     if (saved) {
@@ -31,13 +53,60 @@ const ProfileEdit = () => {
     }
   }, []);
 
+  // Получение подсказок улиц через Nominatim
+  useEffect(() => {
+    const fetchStreetSuggestions = async () => {
+      if (!debouncedStreet.trim() || debouncedStreet.length < 3) {
+        setStreetSuggestions([]);
+        setShowStreetSuggestions(false);
+        return;
+      }
+
+      setIsFetchingStreets(true);
+      try {
+        const query = `${debouncedStreet}, Самара, Россия`;
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`
+        );
+        const data = await response.json();
+        // Извлекаем названия улиц
+        const uniqueStreets = data
+          .map(item => item.address?.road || item.display_name.split(',')[0])
+          .filter((street, index, self) => street && self.indexOf(street) === index);
+        setStreetSuggestions(uniqueStreets);
+        setShowStreetSuggestions(uniqueStreets.length > 0);
+      } catch (error) {
+        console.error('Ошибка получения подсказок улиц:', error);
+        setStreetSuggestions([]);
+        setShowStreetSuggestions(false);
+      } finally {
+        setIsFetchingStreets(false);
+      }
+    };
+
+    fetchStreetSuggestions();
+  }, [debouncedStreet]);
+
+  // Закрытие подсказок при клике вне
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (streetSuggestionsRef.current && !streetSuggestionsRef.current.contains(event.target)) {
+        setShowStreetSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     let newValue = value;
 
     if (name === 'phone') {
-      // При вводе сохраняем только цифры
       newValue = value.replace(/\D/g, '');
+    }
+    if (name === 'street') {
+      setSelectedStreet(false); // сброс флага при ручном вводе
     }
 
     setFormData(prev => ({ ...prev, [name]: newValue }));
@@ -57,9 +126,7 @@ const ProfileEdit = () => {
     validateField('phone', formatted);
   };
 
-  const handlePhotoClick = () => {
-    fileInputRef.current.click();
-  };
+  const handlePhotoClick = () => fileInputRef.current?.click();
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -96,6 +163,7 @@ const ProfileEdit = () => {
         break;
       case 'street':
         if (!value.trim()) error = 'Обязательное поле';
+        // проверка по selectedStreet будет в handleSubmit
         break;
       case 'house':
         if (!value.trim()) error = 'Обязательное поле';
@@ -109,16 +177,23 @@ const ProfileEdit = () => {
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
+  const handleStreetSuggestionClick = (street) => {
+    setFormData(prev => ({ ...prev, street }));
+    setSelectedStreet(true);
+    setShowStreetSuggestions(false);
+    setErrors(prev => ({ ...prev, street: '' }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-  
+
     let phoneForValidation = formData.phone;
     const normalizedPhone = normalizeAndFormatPhone(formData.phone);
     if (normalizedPhone !== formData.phone) {
       setFormData(prev => ({ ...prev, phone: normalizedPhone }));
       phoneForValidation = normalizedPhone;
     }
-  
+
     const newErrors = {};
 
     // Фамилия
@@ -135,7 +210,7 @@ const ProfileEdit = () => {
       newErrors.firstName = 'Только кириллица';
     }
 
-    // Отчество (необязательное, но если есть – проверяем)
+    // Отчество
     if (formData.middleName && !validateCyrillicOnly(formData.middleName)) {
       newErrors.middleName = 'Только кириллица';
     }
@@ -150,6 +225,8 @@ const ProfileEdit = () => {
     // Улица
     if (!formData.street.trim()) {
       newErrors.street = 'Обязательное поле';
+    } else if (!selectedStreet) {
+      newErrors.street = 'Пожалуйста, выберите улицу из списка';
     }
 
     // Дом
@@ -159,70 +236,56 @@ const ProfileEdit = () => {
       newErrors.house = 'Только цифры, кириллица, тире, дробь';
     }
 
-    // Квартира (необязательная)
+    // Квартира
     if (formData.apartment && !validateApartment(formData.apartment)) {
       newErrors.apartment = 'Только цифры и кириллица';
     }
 
     setErrors(newErrors);
 
-    // Если есть ошибки – не сохраняем
     if (Object.keys(newErrors).length > 0) {
       return;
     }
 
     // Сохраняем
-    localStorage.setItem('userProfile', JSON.stringify({...formData, phone: phoneForValidation}));
+    localStorage.setItem('userProfile', JSON.stringify({ ...formData, phone: phoneForValidation }));
     navigate('/profile');
   };
-
-  // Фильтрация улиц для подсказок
-  const filteredStreets = streets.filter(street =>
-    street.toLowerCase().startsWith(formData.street.toLowerCase())
-  );
 
   return (
     <div className="profile-container">
       <h2>Редактирование профиля</h2>
       <form onSubmit={handleSubmit} className="profile-form">
         <div className="form-group">
-        <label>Фото профиля</label>
-        <div className="photo-upload">
-          {/* Скрытый input */}
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handlePhotoChange}
-            style={{ display: 'none' }}
-          />
-          {/* Превью */}
-          {formData.photo ? (
-            <div className="photo-preview">
-              <img src={formData.photo} alt="preview" />
-            </div>
-          ) : (
-            <div className="photo-placeholder">
-              Нет фото
-            </div>
-          )}
-          {/* Кнопки */}
-          <div className="photo-actions">
-            <button type="button" onClick={handlePhotoClick}>
-              {formData.photo ? 'Заменить' : 'Загрузить'}
-            </button>
-            {formData.photo && (
-              <button
-                type="button"
-                className="remove-btn"
-                onClick={handleRemovePhoto}
-              >
-                Удалить
-              </button>
+          <label>Фото профиля</label>
+          <div className="photo-upload">
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handlePhotoChange}
+              style={{ display: 'none' }}
+            />
+            {formData.photo ? (
+              <div className="photo-preview">
+                <img src={formData.photo} alt="preview" />
+              </div>
+            ) : (
+              <div className="photo-placeholder">Нет фото</div>
             )}
+            <div className="photo-actions">
+              <button type="button" onClick={handlePhotoClick}>
+                {formData.photo ? 'Заменить' : 'Загрузить'}
+              </button>
+              {formData.photo && (
+                <button type="button" className="remove-btn" onClick={handleRemovePhoto}>
+                  Удалить
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+
         <div className="form-group">
           <label>Фамилия *</label>
           <input
@@ -275,31 +338,35 @@ const ProfileEdit = () => {
 
         <div className="form-group">
           <label>Город</label>
-          <input
-            type="text"
-            name="city"
-            value={formData.city}
-            onChange={handleChange}
-            disabled // в MVP только Самара
-          />
+          <input type="text" name="city" value={formData.city} onChange={handleChange} disabled />
         </div>
 
-        <div className="form-group">
+        <div className="form-group" ref={streetSuggestionsRef}>
           <label>Улица *</label>
-          <input
-            type="text"
-            name="street"
-            value={formData.street}
-            onChange={handleChange}
-            list="street-suggestions"
-            className={errors.street ? 'error' : ''}
-            autoComplete="off"
-          />
-          <datalist id="street-suggestions">
-            {filteredStreets.map((street, idx) => (
-              <option key={idx} value={street} />
-            ))}
-          </datalist>
+          <div className="input-wrapper">
+            <input
+              type="text"
+              name="street"
+              value={formData.street}
+              onChange={handleChange}
+              onFocus={() => {
+                if (streetSuggestions.length > 0) setShowStreetSuggestions(true);
+              }}
+              className={errors.street ? 'error' : ''}
+              autoComplete="off"
+            />
+            {showStreetSuggestions && (
+              <ul className="suggestions-list">
+                {isFetchingStreets && <li className="suggestion-item loading">Загрузка...</li>}
+                {!isFetchingStreets &&
+                  streetSuggestions.map((street, idx) => (
+                    <li key={idx} className="suggestion-item" onClick={() => handleStreetSuggestionClick(street)}>
+                      {street}
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </div>
           {errors.street && <span className="error-message">{errors.street}</span>}
         </div>
 
