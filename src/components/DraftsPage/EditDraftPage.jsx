@@ -1,16 +1,41 @@
-// pages/EditDraftPage/EditDraftPage.js
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
-import './EditDraftPage.css'; // можно использовать те же стили, что и CreateMessagePage
+import './EditDraftPage.css';
 
 const EditDraftPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getMessage, updateMessage, publishDraft } = useMessages();
+  const { getMessage, updateMessage } = useMessages();
   const draft = getMessage(Number(id));
 
-  // Проверка, что черновик существует и принадлежит пользователю (здесь userId = 1)
+  // Состояния
+  const [topic, setTopic] = useState('');
+  const [description, setDescription] = useState('');
+  const [photos, setPhotos] = useState([]); // массив { id, file, previewUrl }
+  const [type, setType] = useState('');     // категория
+  const [errors, setErrors] = useState({});
+  const fileInputRef = useRef(null);
+  const pendingActionRef = useRef('add');
+
+  // Инициализация из черновика
+  useEffect(() => {
+    if (draft) {
+      setTopic(draft.topic || '');
+      setDescription(draft.description || '');
+      setType(draft.type || '');
+
+      // Преобразуем существующие фото в формат { id, previewUrl }
+      const existingPhotos = (draft.photos || []).map((url, idx) => ({
+        id: Date.now() + idx,
+        file: null,
+        previewUrl: url,
+      }));
+      setPhotos(existingPhotos);
+    }
+  }, [draft]);
+
+  // Проверка существования черновика
   useEffect(() => {
     if (!draft || draft.userId !== 1) {
       alert('Черновик не найден');
@@ -18,32 +43,68 @@ const EditDraftPage = () => {
     }
   }, [draft, navigate]);
 
-  const [topic, setTopic] = useState(draft?.topic || '');
-  const [description, setDescription] = useState(draft?.description || '');
-  const [photo, setPhoto] = useState(null);
-  const [category, setCategory] = useState(draft?.category || '');
-  const [errors, setErrors] = useState({});
-  const fileInputRef = useRef(null);
+  // Функции для работы с фото (аналогично CreateMessagePage)
+  const addFiles = (newFiles) => {
+    const newPhotos = newFiles.map((file, index) => ({
+      id: Date.now() + index,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPhotos(prev => [...prev, ...newPhotos]);
+  };
 
-  // Если фото уже есть в черновике, показываем его
-  const [existingPhoto] = useState(draft?.photos?.[0] || null);
+  const replaceFiles = (newFiles) => {
+    photos.forEach(photo => {
+      if (photo.file) URL.revokeObjectURL(photo.previewUrl);
+    });
+    const newPhotos = newFiles.map((file, index) => ({
+      id: Date.now() + index,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPhotos(newPhotos);
+  };
 
-  const handlePhotoClick = () => fileInputRef.current.click();
+  const handleAddPhotoClick = () => {
+    pendingActionRef.current = 'add';
+    fileInputRef.current.click();
+  };
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) setPhoto(file);
+  const handleReplacePhotoClick = () => {
+    pendingActionRef.current = 'replace';
+    fileInputRef.current.click();
+  };
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    if (pendingActionRef.current === 'add') {
+      addFiles(files);
+    } else {
+      replaceFiles(files);
+    }
+    e.target.value = '';
+  };
+
+  const removePhoto = (id) => {
+    setPhotos(prev => {
+      const photoToRemove = prev.find(p => p.id === id);
+      if (photoToRemove && photoToRemove.file) {
+        URL.revokeObjectURL(photoToRemove.previewUrl);
+      }
+      return prev.filter(p => p.id !== id);
+    });
   };
 
   const validateForm = () => {
     const newErrors = {};
     if (!topic.trim()) newErrors.topic = 'Укажите тему сообщения';
     if (!description.trim()) newErrors.description = 'Опишите проблему';
-    if (!category) newErrors.category = 'Выберите рубрику';
+    if (!type) newErrors.type = 'Выберите рубрику';
     return newErrors;
   };
 
-  // Сохранить как опубликованное сообщение
   const handlePublish = (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
@@ -52,27 +113,22 @@ const EditDraftPage = () => {
       return;
     }
 
-    const photoUrl = photo
-      ? URL.createObjectURL(photo)
-      : existingPhoto || 'https://via.placeholder.com/100';
+    const photoUrls = photos.map(photo => photo.previewUrl);
+    if (photoUrls.length === 0) photoUrls.push('https://via.placeholder.com/100');
 
     const updatedMessage = {
+      ...draft,
       topic,
       description,
-      category,
-      photos: [photoUrl],
-      address: draft.address,
-      lat: draft.lat,
-      lng: draft.lng,
-      userId: 1,
-      isDraft: false, // публикуем
+      type,
+      photos: photoUrls,
+      isDraft: false,
     };
 
     updateMessage(draft.id, updatedMessage);
     navigate(`/message/${draft.id}`);
   };
 
-  // Сохранить как черновик (обновить, но оставить isDraft = true)
   const handleSaveDraft = (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
@@ -81,19 +137,15 @@ const EditDraftPage = () => {
       return;
     }
 
-    const photoUrl = photo
-      ? URL.createObjectURL(photo)
-      : existingPhoto || 'https://via.placeholder.com/100';
+    const photoUrls = photos.map(photo => photo.previewUrl);
+    if (photoUrls.length === 0) photoUrls.push('https://via.placeholder.com/100');
 
     const updatedMessage = {
+      ...draft,
       topic,
       description,
-      category,
-      photos: [photoUrl],
-      address: draft.address,
-      lat: draft.lat,
-      lng: draft.lng,
-      userId: 1,
+      type,
+      photos: photoUrls,
       isDraft: true,
     };
 
@@ -104,10 +156,9 @@ const EditDraftPage = () => {
   if (!draft) return null;
 
   return (
-    <div className="create-message-page"> {/* используем те же стили */}
+    <div className="create-message-page">
       <h1 className="page-title">Редактирование черновика</h1>
       <form onSubmit={handlePublish} className="create-message-form">
-        {/* поля формы (аналогично CreateMessagePage) */}
         <div className="form-group">
           <label htmlFor="topic">Тема сообщения</label>
           <input
@@ -135,23 +186,38 @@ const EditDraftPage = () => {
         <div className="form-group">
           <label>Фото</label>
           <div className="photo-upload">
-            <button type="button" onClick={handlePhotoClick} className="photo-btn">
-              {existingPhoto ? 'Заменить фото' : 'Добавить фото'}
+            <button type="button" onClick={handleAddPhotoClick} className="photo-btn">
+              Добавить фото
+            </button>
+            <button type="button" onClick={handleReplacePhotoClick} className="photo-btn">
+              Заменить фото
             </button>
             <input
               type="file"
               ref={fileInputRef}
-              onChange={handlePhotoChange}
+              onChange={handleFileChange}
               accept="image/*"
+              multiple
               style={{ display: 'none' }}
             />
-            {photo && <span className="photo-name">{photo.name}</span>}
-            {!photo && existingPhoto && (
-              <div className="existing-photo">
-                <img src={existingPhoto} alt="текущее" className="photo-thumb" />
-              </div>
-            )}
           </div>
+
+          {photos.length > 0 && (
+            <div className="photo-preview-list">
+              {photos.map(photo => (
+                <div key={photo.id} className="photo-preview-item">
+                  <img src={photo.previewUrl} alt="preview" className="photo-preview" />
+                  <button
+                    type="button"
+                    className="remove-photo-btn"
+                    onClick={() => removePhoto(photo.id)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="form-group">
@@ -165,30 +231,30 @@ const EditDraftPage = () => {
             <label className="radio-label">
               <input
                 type="radio"
-                name="category"
+                name="type"
                 value="parking"
-                checked={category === 'parking'}
-                onChange={(e) => setCategory(e.target.value)}
-              />{' '}
+                checked={type === 'parking'}
+                onChange={(e) => setType(e.target.value)}
+              />
               Парковка
             </label>
             <label className="radio-label">
               <input
                 type="radio"
-                name="category"
+                name="type"
                 value="expired"
-                checked={category === 'expired'}
-                onChange={(e) => setCategory(e.target.value)}
-              />{' '}
+                checked={type === 'expired'}
+                onChange={(e) => setType(e.target.value)}
+              />
               Просроченные продукты
             </label>
           </div>
-          {errors.category && <span className="error-message">{errors.category}</span>}
+          {errors.type && <span className="error-message">{errors.type}</span>}
         </div>
 
         <div className="form-actions">
           <button type="submit" className="submit-btn">Опубликовать</button>
-          <button type="submit" onClick={handleSaveDraft} className="submit-btn">
+          <button type="button" onClick={handleSaveDraft} className="submit-btn">
             Сохранить черновик
           </button>
         </div>

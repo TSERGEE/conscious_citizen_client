@@ -7,7 +7,7 @@ const MessagesList = ({ messages, isDraftList = false }) => {
 
   const handleMessageClick = (id) => {
     if (isDraftList) {
-      navigate(`/edit-draft/${id}`); // маршрут для редактирования черновика
+      navigate(`/edit-draft/${id}`);
     } else {
       navigate(`/message/${id}`);
     }
@@ -17,7 +17,7 @@ const MessagesList = ({ messages, isDraftList = false }) => {
     return <div className="messages-container empty">Нет сообщений для отображения</div>;
   }
 
-   return (
+  return (
     <div className="messages-container">
       {messages.map((msg) => (
         <div
@@ -25,7 +25,6 @@ const MessagesList = ({ messages, isDraftList = false }) => {
           className="message-card"
           onClick={() => handleMessageClick(msg.id)}
         >
-          {/* остальное содержимое карточки без изменений */}
           <div className="message-card-header">
             <span className={`category-badge ${msg.type}`}>
               {msg.type === 'parking' ? 'Парковка' : 'Просроченные продукты'}

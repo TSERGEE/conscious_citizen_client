@@ -18,12 +18,68 @@ const CreateMessagePage = () => {
 
   const [topic, setTopic] = useState('');
   const [description, setDescription] = useState('');
-  const [photo, setPhoto] = useState(null);
+  const [photos, setPhotos] = useState([]); // массив объектов { id, file, previewUrl }
   const [category, setCategory] = useState('');
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
+  const pendingActionRef = useRef('add'); // 'add' или 'replace'
 
   const handlePhotoClick = () => fileInputRef.current.click();
+
+  // Добавление новых файлов к существующим
+  const addFiles = (newFiles) => {
+    const newPhotos = newFiles.map((file, index) => ({
+      id: Date.now() + index,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPhotos(prev => [...prev, ...newPhotos]);
+  };
+  // Замена всех текущих файлов новыми
+  const replaceFiles = (newFiles) => {
+    // Освобождаем старые URL
+    photos.forEach(photo => URL.revokeObjectURL(photo.previewUrl));
+    const newPhotos = newFiles.map((file, index) => ({
+      id: Date.now() + index,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPhotos(newPhotos);
+  };
+  // Обработчик клика по кнопке добавления
+  const handleAddPhotoClick = () => {
+    pendingActionRef.current = 'add';
+    fileInputRef.current.click();
+  };
+
+  // Обработчик клика по кнопке замены
+  const handleReplacePhotoClick = () => {
+    pendingActionRef.current = 'replace';
+    fileInputRef.current.click();
+  };
+  // Обработчик выбора файлов
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    if (pendingActionRef.current === 'add') {
+      addFiles(files);
+    } else {
+      replaceFiles(files);
+    }
+
+    // Очищаем поле input, чтобы можно было повторно выбрать те же файлы
+    e.target.value = '';
+  };
+
+  // Удаление конкретного фото
+  const removePhoto = (id) => {
+    setPhotos(prev => {
+      const photoToRemove = prev.find(p => p.id === id);
+      if (photoToRemove) URL.revokeObjectURL(photoToRemove.previewUrl);
+      return prev.filter(p => p.id !== id);
+    });
+  };
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -38,7 +94,7 @@ const CreateMessagePage = () => {
     return newErrors;
   };
 
-  // Публикация сообщения (isDraft = false)
+  // Публикация сообщения
   const handlePublish = (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
@@ -47,23 +103,26 @@ const CreateMessagePage = () => {
       return;
     }
 
-    const photoUrl = photo ? URL.createObjectURL(photo) : 'https://via.placeholder.com/100';
+    const photoUrls = photos.map(photo => photo.previewUrl);
+    // Если фото нет, можно использовать плейсхолдер (но лучше оставить пустой массив)
+    if (photoUrls.length === 0) photoUrls.push('https://via.placeholder.com/100');
 
     const newMessage = {
       topic,
       description,
       type: category,
-      photos: [photoUrl],
+      photos: photoUrls,
       address,
       lat,
       lng,
-      userId: 1, // заменить на реальный ID пользователя
-      isDraft: false, // публикуем
+      userId: 1,
+      isDraft: false,
     };
 
     const messageId = addMessage(newMessage);
     navigate(`/message/${messageId}`);
   };
+
 
   // Сохранение как черновик (isDraft = true)
   const handleSaveDraft = (e) => {
@@ -74,29 +133,29 @@ const CreateMessagePage = () => {
       return;
     }
 
-    const photoUrl = photo ? URL.createObjectURL(photo) : 'https://via.placeholder.com/100';
+    const photoUrls = photos.map(photo => photo.previewUrl);
+    if (photoUrls.length === 0) photoUrls.push('https://via.placeholder.com/100');
 
     const draftMessage = {
       topic,
       description,
       type: category,
-      photos: [photoUrl],
+      photos: photoUrls,
       address,
       lat,
       lng,
-      userId: 1, // заменить на реальный ID пользователя
-      isDraft: true, // черновик
+      userId: 1,
+      isDraft: true,
     };
 
     addMessage(draftMessage);
-    // Можно перенаправить на страницу черновиков или на главную
-    navigate('/drafts'); // например, на страницу списка черновиков
+    navigate('/drafts');
   };
 
   if (!address) return null;
 
   return (
-    <div className="create-message-page">
+  <div className="create-message-page">
       <h1 className="page-title">Создание сообщения</h1>
       <h2 className="section-subtitle">Опишите проблему</h2>
 
@@ -131,21 +190,43 @@ const CreateMessagePage = () => {
         <div className="form-group">
           <label>Фото</label>
           <div className="photo-upload">
-            <button type="button" onClick={handlePhotoClick} className="photo-btn">
+            <button type="button" onClick={handleAddPhotoClick} className="photo-btn">
               Добавить фото
+            </button>
+            <button type="button" onClick={handleReplacePhotoClick} className="photo-btn">
+              Заменить фото
             </button>
             <input
               type="file"
               ref={fileInputRef}
-              onChange={handlePhotoChange}
+              onChange={handleFileChange}
               accept="image/*"
+              multiple
               style={{ display: 'none' }}
             />
-            {photo && <span className="photo-name">{photo.name}</span>}
           </div>
+
+          {/* Превью выбранных фото */}
+          {photos.length > 0 && (
+            <div className="photo-preview-list">
+              {photos.map(photo => (
+                <div key={photo.id} className="photo-preview-item">
+                  <img src={photo.previewUrl} alt="preview" className="photo-preview" />
+                  <button
+                    type="button"
+                    className="remove-photo-btn"
+                    onClick={() => removePhoto(photo.id)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {errors.photos && <span className="error-message">{errors.photos}</span>}
         </div>
 
-        {/* Адрес (только для чтения) */}
+        {/* Адрес */}
         <div className="form-group">
           <label>Адрес</label>
           <div className="address-display">{address}</div>
@@ -186,9 +267,8 @@ const CreateMessagePage = () => {
           </button>
           <button type="button" onClick={handleSaveDraft} className="submit-btn">
             Сохранить как черновик
-        </button> 
+          </button>
         </div>
-        
       </form>
     </div>
   );

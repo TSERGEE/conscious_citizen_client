@@ -9,16 +9,14 @@ const MessagePage = () => {
   const { getMessage, addMessage } = useMessages();
   const message = getMessage(Number(id));
 
-  // Обработчик для кнопки "Сохранить в черновики"
   const handleSaveAsDraft = () => {
     if (!message) return;
 
-    // Создаём копию сообщения с флагом черновика
     const draftCopy = {
       ...message,
-      id: Date.now(),                 // новый уникальный ID
-      isDraft: true,                   // помечаем как черновик
-      createdAt: new Date().toISOString(), // обновляем дату создания
+      id: Date.now(),
+      isDraft: true,
+      createdAt: new Date().toISOString(),
     };
 
     addMessage(draftCopy);
@@ -34,6 +32,9 @@ const MessagePage = () => {
     );
   }
 
+  // Галерея: если фото есть, показываем их все
+  const photos = message.photos || [];
+
   return (
     <div className="message-page">
       <h1 className="page-title">Новое сообщение</h1>
@@ -46,12 +47,20 @@ const MessagePage = () => {
 
         <div className="message-field">
           <label>Фото</label>
-          <div className="photo-gallery">
-            <img src={message.photos[0]} alt="фото" className="main-photo" />
-            {message.photos.length > 1 && (
-              <div className="photo-count">+{message.photos.length - 1} фото</div>
-            )}
-          </div>
+          {photos.length > 0 ? (
+            <div className="photo-gallery">
+              {photos.map((photo, idx) => (
+                <img
+                  key={idx}
+                  src={photo}
+                  alt={`фото ${idx + 1}`}
+                  className="gallery-photo"
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="message-value">Нет фотографий</div>
+          )}
         </div>
 
         <div className="message-field">
