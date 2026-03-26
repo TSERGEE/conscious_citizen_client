@@ -45,23 +45,37 @@ const Register = () => {
   };
 
   // Валидация email по расширенным правилам
-  const validateEmail = (email) => {
-    if (!email) return 'Email обязателен';
-    // Общее регулярное выражение для email, допускающее спецсимволы до @
-    const re = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-    if (!re.test(email)) {
-      return 'Некорректный email';
-    }
-    // Дополнительно: точка не может быть первым или последним символом в локальной части
-    const localPart = email.split('@')[0];
-    if (localPart.startsWith('.') || localPart.endsWith('.')) {
-      return 'Email не может начинаться или заканчиваться точкой до @';
-    }
-    if (localPart.includes('..')) {
-      return 'Email не может содержать две точки подряд до @';
-    }
-    return '';
-  };
+const validateEmail = (email) => {
+  if (!email) return 'Email обязателен';
+
+  // Базовая проверка формата
+  const re = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+  if (!re.test(email)) {
+    return 'Некорректный email';
+  }
+
+  const [localPart, domain] = email.split('@');
+
+  // Проверка локальной части
+  if (localPart.startsWith('.') || localPart.endsWith('.')) {
+    return 'Email не может начинаться или заканчиваться точкой до @';
+  }
+  if (localPart.includes('..')) {
+    return 'Email не может содержать две точки подряд до @';
+  }
+
+  // Проверка доменной части
+  const domainParts = domain.split('.');
+  const tld = domainParts[domainParts.length - 1];
+  if (!/^[a-zA-Z]{2,}$/.test(tld)) {
+    return 'Домен верхнего уровня должен содержать только буквы (минимум 2 символа)';
+  }
+  if (domainParts.some(part => part.startsWith('-') || part.endsWith('-'))) {
+    return 'Сегменты домена не могут начинаться или заканчиваться дефисом';
+  }
+
+  return '';
+};
 
   const validatePassword = (password) => {
     if (!password) return 'Пароль обязателен';
