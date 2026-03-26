@@ -258,7 +258,7 @@ const MainPage = () => {
       const data = await response.json();
       if (data && data.length > 0) {
         const { lat, lon, display_name } = data[0];
-        const newPos = [parseFloat(lat), parseFloat(lon)];
+        const newPos = { lat: parseFloat(lat), lng: parseFloat(lon) };
 
         if (isInServiceArea(display_name)) {
           setMarkerPosition(newPos);
@@ -282,7 +282,7 @@ const MainPage = () => {
   // Обработчик выбора подсказки
   const handleSuggestionClick = (suggestion) => {
     const { lat, lon, display_name } = suggestion;
-    const newPos = [parseFloat(lat), parseFloat(lon)];
+    const newPos = { lat: parseFloat(lat), lng: parseFloat(lon) };
     if (isInServiceArea(display_name)) {
       setMarkerPosition(newPos);
       setSearchCenter(newPos);
