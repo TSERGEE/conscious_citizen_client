@@ -6,37 +6,41 @@ import './PrivateLayout.css';
 
 const PrivateLayout = ({ children }) => {
   const [userData, setUserData] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { messages } = useMessages();
 
-  const menuRef = useRef();
+  const profileRef = useRef();
+  const notifRef = useRef();
 
-  // Загружаем пользователя
   useEffect(() => {
     const saved = localStorage.getItem('userProfile');
     if (saved) setUserData(JSON.parse(saved));
   }, []);
 
-  // Закрытие при клике вне меню
+  // закрытие по клику вне
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuOpen(false);
+    const handleClick = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // реальный счётчик (пример: все сообщения)
   const notificationCount = messages.length;
 
-  const handleNavigation = (path) => {
+  const handleNav = (path) => {
     navigate(path);
-    setMenuOpen(false);
+    setProfileOpen(false);
+    setNotifOpen(false);
   };
 
   return (
@@ -50,20 +54,48 @@ const PrivateLayout = ({ children }) => {
 
         <div className="header-actions">
 
-          {/* Уведомления */}
-          <div
-            className="notification-btn"
-            onClick={() => navigate('/notifications')}
-          >
-            <img src="/images/bell.png" alt="notifications" />
-            {notificationCount > 0 && (
-              <span className="notification-badge">
-                {notificationCount}
-              </span>
-            )}
+          {/* УВЕДОМЛЕНИЯ */}
+          <div className="notif-wrapper" ref={notifRef}>
+            <div
+              className="notification-btn"
+              onClick={() => {
+                setNotifOpen(prev => !prev);
+                setProfileOpen(false);
+              }}
+            >
+              <img src="/images/bell.png" alt="notifications" />
+              {notificationCount > 0 && (
+                <span className="notification-badge">
+                  {notificationCount}
+                </span>
+              )}
+            </div>
+
+            <div className={`notif-dropdown ${notifOpen ? 'open' : ''}`}>
+              {messages.length === 0 ? (
+                <div className="empty">Нет уведомлений</div>
+              ) : (
+                messages.slice(-5).reverse().map(msg => (
+                  <div
+                    key={msg.id}
+                    className="notif-item"
+                    onClick={() => handleNav(`/messages/${msg.id}`)}
+                  >
+                    <div className="notif-title">Новое сообщение</div>
+                    <div className="notif-text">
+                      {msg.title || 'Без названия'}
+                    </div>
+                  </div>
+                ))
+              )}
+
+              <button onClick={() => handleNav('/all-messages')}>
+                Все сообщения
+              </button>
+            </div>
           </div>
 
-          {/* 🌙 Тема */}
+          {/* ТЕМА */}
           <button onClick={toggleTheme} className="theme-toggle">
             <img
               src={theme === 'light' ? '/images/moon.png' : '/images/sun.png'}
@@ -73,11 +105,14 @@ const PrivateLayout = ({ children }) => {
             />
           </button>
 
-          {/* 👤 Аватар + dropdown */}
-          <div className="avatar-wrapper" ref={menuRef}>
+          {/* ПРОФИЛЬ */}
+          <div className="avatar-wrapper" ref={profileRef}>
             <div
               className="profile-avatar"
-              onClick={() => setMenuOpen(prev => !prev)}
+              onClick={() => {
+                setProfileOpen(prev => !prev);
+                setNotifOpen(false);
+              }}
             >
               {userData?.photo ? (
                 <img src={userData.photo} alt="avatar" />
@@ -88,24 +123,18 @@ const PrivateLayout = ({ children }) => {
               )}
             </div>
 
-            {/* Dropdown */}
-            <div className={`dropdown-menu ${menuOpen ? 'open' : ''}`}>
-              <button onClick={() => handleNavigation('/profile')}>
-                Профиль
-              </button>
-              <button onClick={() => handleNavigation('/my-messages')}>
-                Мои сообщения
-              </button>
-              <button onClick={() => handleNavigation('/drafts')}>
-                Черновики
-              </button>
-              <button onClick={() => handleNavigation('/notifications')}>
-                Уведомления
-              </button>
+            <div className={`dropdown-menu ${profileOpen ? 'open' : ''}`}>
+              <button onClick={() => handleNav('/profile')}>Профиль</button>
+              <button onClick={() => handleNav('/my-messages')}>Мои сообщения</button>
+              <button onClick={() => handleNav('/all-messages')}>Все сообщения</button>
+              <button onClick={() => handleNav('/drafts')}>Черновики</button>
+              <button onClick={() => handleNav('/notifications')}>Уведомления</button>
+
               <hr />
-              <button onClick={() => handleNavigation('/feedback')}>
-                Обратная связь
-              </button>
+
+              <button onClick={() => handleNav('/about')}>О проекте</button>
+              <button onClick={() => handleNav('/feedback')}>Обратная связь</button>
+
               <button
                 className="logout-btn"
                 onClick={() => {
