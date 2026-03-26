@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
+import placeholderImg from '../../assets/placeholder.png';
 import './EditDraftPage.css';
 
 const EditDraftPage = () => {
@@ -114,7 +115,7 @@ const EditDraftPage = () => {
     }
 
     const photoUrls = photos.map(photo => photo.previewUrl);
-    if (photoUrls.length === 0) photoUrls.push('https://via.placeholder.com/100');
+    if (photoUrls.length === 0) photoUrls.push(placeholderImg);
 
     const updatedMessage = {
       ...draft,
@@ -138,7 +139,7 @@ const EditDraftPage = () => {
     }
 
     const photoUrls = photos.map(photo => photo.previewUrl);
-    if (photoUrls.length === 0) photoUrls.push('https://via.placeholder.com/100');
+    if (photoUrls.length === 0) photoUrls.push(placeholderImg);
 
     const updatedMessage = {
       ...draft,

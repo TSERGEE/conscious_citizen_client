@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
+import placeholderImg from '../../assets/placeholder.png';
 import './CreateMessagePage.css';
 
 const CreateMessagePage = () => {
@@ -105,7 +106,7 @@ const CreateMessagePage = () => {
 
     const photoUrls = photos.map(photo => photo.previewUrl);
     // Если фото нет, можно использовать плейсхолдер (но лучше оставить пустой массив)
-    if (photoUrls.length === 0) photoUrls.push('https://via.placeholder.com/100');
+    if (photoUrls.length === 0) photoUrls.push(placeholderImg);
 
     const newMessage = {
       topic,
@@ -134,7 +135,7 @@ const CreateMessagePage = () => {
     }
 
     const photoUrls = photos.map(photo => photo.previewUrl);
-    if (photoUrls.length === 0) photoUrls.push('https://via.placeholder.com/100');
+    if (photoUrls.length === 0) photoUrls.push(placeholderImg);
 
     const draftMessage = {
       topic,
