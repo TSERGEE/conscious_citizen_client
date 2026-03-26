@@ -16,34 +16,35 @@ import AllMessagesPage from './components/MessagesPage/AllMessagesPage';
 import { MessagesProvider } from './contexts/MessagesContext';
 import DraftsPage from './components/DraftsPage/DraftsPage';
 import EditDraftPage from './components/DraftsPage/EditDraftPage';
+import { ThemeProvider } from './contexts/ThemeContext'; // ← импорт провайдера темы
+import './styles/theme.css';
+
 function App() {
   return (
-  
     <BrowserRouter>
-      <MessagesProvider> 
-      <Routes>
-        
-        <Route path="/" element={<Layout><Login /></Layout>} />
-        <Route path="/login" element={<Layout><Login /></Layout>} />
-        <Route path="/register" element={<Layout><Register /></Layout>} />
-        <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
-        <Route path="/reset-password" element={<Layout><ResetPassword /></Layout>} />
-        <Route path="/rules" element={<Rules />} />
+      <ThemeProvider> {/* ← обёртка для всей темы */}
+        <MessagesProvider>
+          <Routes>
+            <Route path="/" element={<Layout><Login /></Layout>} />
+            <Route path="/login" element={<Layout><Login /></Layout>} />
+            <Route path="/register" element={<Layout><Register /></Layout>} />
+            <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
+            <Route path="/reset-password" element={<Layout><ResetPassword /></Layout>} />
+            <Route path="/rules" element={<Rules />} />
 
-        
-        <Route path="/main" element={<PrivateLayout><MainPage /></PrivateLayout>} />
-        <Route path="/profile" element={<PrivateLayout><Profile /></PrivateLayout>} />
-        <Route path="/profile/edit" element={<PrivateLayout><ProfileEdit /></PrivateLayout>} />
-        <Route path="/create-message" element={<PrivateLayout><CreateMessagePage /></PrivateLayout>} />
-        <Route path="/message/:id" element={<PrivateLayout><MessagePage /></PrivateLayout>} />
-        <Route path="/my-messages" element={<PrivateLayout><MyMessagesPage /></PrivateLayout>} />     
-        <Route path="/all-messages" element={<PrivateLayout><AllMessagesPage /></PrivateLayout>} />   
-        <Route path="/drafts" element={<PrivateLayout><DraftsPage /></PrivateLayout>} />
-        <Route path="/edit-draft/:id" element={<PrivateLayout><EditDraftPage /></PrivateLayout>} />
-      </Routes>
-      </MessagesProvider> 
+            <Route path="/main" element={<PrivateLayout><MainPage /></PrivateLayout>} />
+            <Route path="/profile" element={<PrivateLayout><Profile /></PrivateLayout>} />
+            <Route path="/profile/edit" element={<PrivateLayout><ProfileEdit /></PrivateLayout>} />
+            <Route path="/create-message" element={<PrivateLayout><CreateMessagePage /></PrivateLayout>} />
+            <Route path="/message/:id" element={<PrivateLayout><MessagePage /></PrivateLayout>} />
+            <Route path="/my-messages" element={<PrivateLayout><MyMessagesPage /></PrivateLayout>} />
+            <Route path="/all-messages" element={<PrivateLayout><AllMessagesPage /></PrivateLayout>} />
+            <Route path="/drafts" element={<PrivateLayout><DraftsPage /></PrivateLayout>} />
+            <Route path="/edit-draft/:id" element={<PrivateLayout><EditDraftPage /></PrivateLayout>} />
+          </Routes>
+        </MessagesProvider>
+      </ThemeProvider>
     </BrowserRouter>
-  
   );
 }
 

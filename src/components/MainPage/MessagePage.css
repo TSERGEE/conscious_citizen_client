@@ -2,20 +2,20 @@
   max-width: 800px;
   margin: 30px auto;
   padding: 30px 40px;
-  background-color: #fff;
+  background-color: var(--bg-card);
   border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-md);
   font-family: 'Montserrat', sans-serif;
 }
 
 .page-title {
   font-size: 28px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 30px;
   padding-bottom: 15px;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid var(--accent);
   display: inline-block;
   width: auto;
   margin-left: auto;
@@ -37,19 +37,19 @@
 
 .message-field label {
   font-weight: 600;
-  color: #667eea;
+  color: var(--accent);
   font-size: 15px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .message-value {
-  background-color: #f9f9fc;
+  background-color: var(--bg-secondary);
   padding: 14px 18px;
   border-radius: 12px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid var(--accent);
   font-size: 16px;
-  color: #333;
+  color: var(--text-primary);
   line-height: 1.5;
   word-break: break-word;
 }
@@ -59,7 +59,6 @@
   min-height: 80px;
 }
 
-/* Галерея фото */
 .photo-gallery {
   display: flex;
   align-items: center;
@@ -72,27 +71,26 @@
   max-height: 200px;
   border-radius: 12px;
   object-fit: cover;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  border: 1px solid #eee;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
 }
 
 .photo-count {
-  background-color: #f0f0ff;
-  color: #667eea;
+  background-color: var(--accent-light);
+  color: var(--accent);
   padding: 8px 16px;
   border-radius: 30px;
   font-size: 15px;
   font-weight: 500;
 }
 
-/* Панель действий */
 .action-panel {
   display: flex;
   justify-content: center;
   gap: 20px;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #eaeef2;
+  border-top: 1px solid var(--border-light);
 }
 
 .action-btn {
@@ -100,8 +98,8 @@
   height: 60px;
   border: none;
   border-radius: 50%;
-  background-color: #f0f0ff;
-  color: #667eea;
+  background-color: var(--accent-light);
+  color: var(--accent);
   font-size: 28px;
   cursor: pointer;
   display: flex;
@@ -112,7 +110,7 @@
 }
 
 .action-btn:hover {
-  background-color: #667eea;
+  background-color: var(--accent);
   color: white;
   transform: translateY(-3px);
   box-shadow: 0 8px 15px rgba(102, 126, 234, 0.3);
@@ -122,25 +120,24 @@
   transform: translateY(0);
 }
 
-/* Страница не найдена */
 .message-not-found {
   text-align: center;
   padding: 60px 20px;
   max-width: 500px;
   margin: 50px auto;
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-md);
 }
 
 .message-not-found h2 {
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 20px;
   font-size: 24px;
 }
 
 .message-not-found button {
-  background-color: #667eea;
+  background-color: var(--accent);
   color: white;
   border: none;
   padding: 12px 30px;
@@ -152,8 +149,9 @@
 }
 
 .message-not-found button:hover {
-  background-color: #5a67d8;
+  background-color: var(--accent-hover);
 }
+
 .photo-gallery {
   display: flex;
   flex-wrap: wrap;
@@ -166,5 +164,5 @@
   height: 100px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-light);
 }

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTheme } from '../../contexts/ThemeContext'; // импортируем хук
 import './PrivateLayout.css';
 
 const PrivateLayout = ({ children }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme(); // получаем текущую тему и функцию переключения
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
   const closeMenu = () => setMenuOpen(false);
@@ -16,21 +18,29 @@ const PrivateLayout = ({ children }) => {
 
   return (
     <div className="private-layout">
-      {/* Шапка */}
       <header className="private-header">
         <Link to="/main" className="private-logo">Сознательный гражданин</Link>
-        <div id="search-root" className="header-search-container"></div> {/* Контейнер для портала */}
-        <div className="hamburger" onClick={toggleMenu}>
-          <span></span>
-          <span></span>
-          <span></span>
+        <div id="search-root" className="header-search-container"></div>
+        {/* Блок с кнопкой темы и гамбургером */}
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <button onClick={toggleTheme} className="theme-toggle">
+            <img
+                src={theme === 'light' ? '/images/moon.png' : '/images/sun.png'}
+                alt="Switch theme"
+                width={24}
+                height={24}
+              />
+          </button>
+          <div className="hamburger" onClick={toggleMenu}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
         </div>
       </header>
 
-      {/* Затемнение фона при открытом меню */}
       {menuOpen && <div className="overlay" onClick={closeMenu}></div>}
 
-      {/* Боковое меню */}
       <div className={`side-menu ${menuOpen ? 'open' : ''}`}>
         <div className="menu-header">
           <div className="menu-logo">{/*Сознательный гражданин*/}</div>
@@ -52,13 +62,9 @@ const PrivateLayout = ({ children }) => {
           <button className="feedback-btn" onClick={() => handleNavigation('/feedback')}>
             ОБРАТНАЯ СВЯЗЬ
           </button>
-          {/*<button className="create-message-btn" onClick={() => handleNavigation('/categories')}>
-            Создать сообщение
-          </button>*/}
         </div>
       </div>
 
-      {/* Основной контент */}
       <main className="private-content">
         {children}
       </main>

@@ -1,10 +1,10 @@
 .messages-container {
   max-width: 900px;
   margin: 0 auto;
-  background-color: white;
+  background-color: var(--bg-card);
   border-radius: 20px;
   padding: 30px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -15,23 +15,23 @@
   justify-content: center;
   align-items: center;
   min-height: 200px;
-  color: #999;
+  color: var(--text-light);
   text-align: center;
 }
 
 .message-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-light);
 }
 
 .message-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102,126,234,0.15);
+  box-shadow: var(--shadow-lg);
   border-color: transparent;
 }
 
@@ -51,27 +51,27 @@
 }
 
 .category-badge.parking {
-  background-color: #667eea;
+  background-color: var(--accent);
 }
 
 .category-badge.expired {
-  background-color: #e53e3e;
+  background-color: var(--danger);
 }
 
 .message-date {
-  color: #999;
+  color: var(--text-light);
   font-size: 12px;
 }
 
 .message-topic {
   margin: 0 0 8px 0;
   font-size: 18px;
-  color: #333;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .message-address {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 14px;
   margin: 0 0 12px 0;
 }
@@ -90,9 +90,9 @@
 }
 
 .photo-count {
-  background-color: #f0f0f0;
+  background-color: var(--bg-secondary);
   padding: 4px 8px;
   border-radius: 20px;
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
 }

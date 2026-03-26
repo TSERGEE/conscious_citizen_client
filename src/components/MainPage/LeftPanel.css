@@ -4,9 +4,9 @@
   left: 20px;
   width: 320px;
   max-width: 32%;
-  background-color: white;
+  background-color: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-md);
   z-index: 100;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
@@ -14,20 +14,18 @@
   box-sizing: border-box;
 }
 
-/* Header */
 .feed-header {
   margin-bottom: 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light);
   padding-bottom: 10px;
 }
 
 .feed-header h3 {
   margin: 0;
-  color: #667eea;
+  color: var(--accent);
   font-size: 18px;
 }
 
-/* Фильтр */
 .filter-buttons {
   display: flex;
   gap: 6px;
@@ -38,31 +36,29 @@
 .filter-buttons button {
   padding: 6px 10px;
   border: none;
-  background: #f1f1f1;
+  background: var(--bg-secondary);
   cursor: pointer;
   border-radius: 8px;
   font-size: 13px;
   transition: all 0.2s ease;
+  color: var(--text-primary);
 }
 
 .filter-buttons button:hover {
-  background: #e0e0ff;
+  background: var(--accent-light);
 }
 
-/* АКТИВНАЯ кнопка */
 .filter-buttons button.active {
-  background: #667eea;
+  background: var(--accent);
   color: white;
 }
 
-/* Список */
 .category-messages {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-/* Карточка сообщения */
 .message-item {
   display: flex;
   align-items: center;
@@ -73,11 +69,10 @@
 }
 
 .message-item:hover {
-  background-color: #f5f7ff;
+  background-color: var(--accent-light);
   transform: translateY(-1px);
 }
 
-/* Фото */
 .message-thumb {
   width: 42px;
   height: 42px;
@@ -86,7 +81,6 @@
   margin-right: 10px;
 }
 
-/* Текст */
 .message-info {
   flex: 1;
   display: flex;
@@ -96,7 +90,7 @@
 .message-topic {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -105,10 +99,9 @@
 
 .message-date {
   font-size: 12px;
-  color: #999;
+  color: var(--text-light);
 }
 
-/* Тип (бейдж) */
 .message-type {
   font-size: 11px;
   margin-top: 2px;
@@ -118,26 +111,35 @@
   width: fit-content;
 }
 
-/* разные цвета */
 .message-type.parking {
   background: #e3f2fd;
   color: #1976d2;
 }
-
 .message-type.expired {
   background: #ffebee;
   color: #d32f2f;
 }
-
 .message-type.draft {
   background: #f5f5f5;
   color: #777;
 }
 
-/*  Пусто */
+[data-theme="dark"] .message-type.parking {
+  background: #1e3a5f;
+  color: #90caf9;
+}
+[data-theme="dark"] .message-type.expired {
+  background: #4a1e2c;
+  color: #ef9a9a;
+}
+[data-theme="dark"] .message-type.draft {
+  background: #2c2c2c;
+  color: #bdbdbd;
+}
+
 .no-messages {
   padding: 10px;
   text-align: center;
-  color: #999;
+  color: var(--text-light);
   font-size: 13px;
 }

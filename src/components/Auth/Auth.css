@@ -1,9 +1,7 @@
-/* Auth.css — только для форм */
-
 .auth-container {
-  background: white;
+  background: var(--bg-card);
   border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-lg);
   height: 100%;
   width: 100%;
   max-width: 600px;
@@ -15,42 +13,39 @@
   font-size: 28px;
   font-weight: 600;
   margin-bottom: 30px;
-  color: #333;
+  color: var(--text-primary);
   text-align: center;
 }
 
 .auth-container .description {
   text-align: center;
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 30px;
   font-size: 14px;
 }
 
-/* Общие стили для групп полей */
 .form-group,
 .password-input-group {
-  margin-bottom: 20px;  /* единый отступ снизу */
+  margin-bottom: 20px;
   width: 100%;
 }
 
-/* Стили для меток (label) во всех группах */
 .form-group label,
 .password-input-group label {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: #555;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
-/* Поля ввода (обычные и для пароля) */
 .form-group input,
 .password-field {
-  background-color: #ffffff;
-  color: #333333;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   width: 100%;
   padding: 14px;
-  border: 2px solid #e1e1e1;
+  border: 2px solid var(--border-light);
   border-radius: 10px;
   font-size: 16px;
   transition: border-color 0.3s;
@@ -60,22 +55,19 @@
 .form-group input:focus,
 .password-field:focus {
   outline: none;
-  border-color: #667eea;  /* меняем на акцентный цвет, а не серый */
+  border-color: var(--accent);
 }
 
-/* Специфичные для поля пароля: добавляем отступ для кнопки */
 .password-field {
-  padding-right: 45px;  /* место для кнопки-глазика */
+  padding-right: 45px;
 }
 
-/* Обёртка для поля пароля и кнопки */
 .password-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-/* Кнопка-глазик */
 .toggle-password {
   position: absolute;
   right: 10px;
@@ -86,7 +78,7 @@
   cursor: pointer;
   padding: 0;
   margin: 0;
-  color: #666;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -99,14 +91,13 @@
 }
 
 .toggle-password:hover {
-  color: #667eea;
+  color: var(--accent);
 }
 
-/* Кнопка отправки формы (общая) */
 button[type="submit"] {
   width: 100%;
   padding: 14px;
-  background: #667eea;
+  background: var(--accent);
   color: white;
   border: none;
   border-radius: 10px;
@@ -114,28 +105,25 @@ button[type="submit"] {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.3s;
-  margin-top: 10px; /* небольшой отступ сверху для визуального отделения */
+  margin-top: 10px;
 }
 
 button[type="submit"]:hover {
-  background: #5a67d8;
+  background: var(--accent-hover);
 }
 
-/* Ошибки */
 .error-message {
   display: block;
   margin-top: 5px;
-  color: #e53e3e;
+  color: var(--danger);
   font-size: 14px;
 }
 
-/* Поле с ошибкой */
 .form-group input.error,
 .password-field.error {
-  border-color: #e53e3e;
+  border-color: var(--danger);
 }
 
-/* Чекбоксы */
 .checkbox-group {
   margin-bottom: 20px;
 }
@@ -146,7 +134,7 @@ button[type="submit"]:hover {
   gap: 8px;
   cursor: pointer;
   font-size: 14px;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .checkbox-label input[type="checkbox"] {
@@ -156,7 +144,7 @@ button[type="submit"]:hover {
 }
 
 .checkbox-label a {
-  color: #667eea;
+  color: var(--accent);
   text-decoration: none;
 }
 
@@ -164,7 +152,6 @@ button[type="submit"]:hover {
   text-decoration: underline;
 }
 
-/* Ссылки под формой */
 .extra-link {
   margin-top: 20px;
   text-align: center;
@@ -172,12 +159,12 @@ button[type="submit"]:hover {
 }
 
 .extra-link a {
-  color: #667eea;
+  color: var(--accent);
   text-decoration: none;
   transition: color 0.3s;
 }
 
 .extra-link a:hover {
-  color: #764ba2;
+  color: var(--accent-hover);
   text-decoration: underline;
 }

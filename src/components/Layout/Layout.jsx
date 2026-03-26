@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import './Layout.css'; // можно вынести стили шапки отдельно или оставить в Auth.css, но для порядка создадим отдельный файл
+import { useTheme } from '../../contexts/ThemeContext';
+import './Layout.css';
 
 const Layout = ({ children }) => {
   const location = useLocation();
   
-  // Определяем, какая ссылка должна быть справа в зависимости от текущего пути
   const getNavLink = () => {
     if (location.pathname === '/login' || location.pathname === '/') {
       return { to: '/register', text: 'Регистрация' };
@@ -16,9 +16,10 @@ const Layout = ({ children }) => {
     } else if (location.pathname === '/reset-password') {
       return { to: '/login', text: 'Вход' };
     }
-    // По умолчанию
     return { to: '/login', text: 'Вход' };
   };
+
+  const { theme, toggleTheme } = useTheme(); // получаем тему и функцию переключения
 
   const navLink = getNavLink();
 
@@ -26,8 +27,18 @@ const Layout = ({ children }) => {
     <div className="layout">
       <header className="header">
         <div className="header-container">
-        <Link to="/" className="logo">Сознательный гражданин</Link>
-        <Link to={navLink.to} className="nav-link">{navLink.text}</Link>
+          <Link to="/" className="logo">Сознательный гражданин</Link>
+          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+            <Link to={navLink.to} className="nav-link">{navLink.text}</Link>
+            <button onClick={toggleTheme} className="theme-toggle">
+              <img
+                src={theme === 'light' ? '/images/moon.png' : '/images/sun.png'}
+                alt="Switch theme"
+                width={24}
+                height={24}
+              />
+            </button>
+          </div>
         </div>
       </header>
       <main className="content">

@@ -4,7 +4,6 @@
   position: relative;
 }
 
-/* Карта на всю высоту */
 .map-container {
   width: 100%;
   height: 100%;
@@ -13,13 +12,12 @@
   z-index: 1;
 }
 
-/* Блок, который вставляется в шапку */
 .header-search-block {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  max-width: 700px; /* ограничим ширину, чтобы не растягивалось */
+  max-width: 700px;
 }
 
 .address-input-wrapper {
@@ -32,19 +30,21 @@
   flex: 1;
   height: 38px;
   padding: 0 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   border-radius: 20px 0 0 20px;
   outline: none;
   font-size: 14px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   box-sizing: border-box;
 }
 
 .address-input-wrapper .search-btn {
   height: 38px;
   padding: 0 16px;
-  background-color: #667eea;
+  background-color: var(--accent);
   color: white;
-  border: 1px solid #667eea;
+  border: 1px solid var(--accent);
   border-radius: 0 20px 20px 0;
   cursor: pointer;
   font-size: 14px;
@@ -54,24 +54,23 @@
 }
 
 .address-input-wrapper .search-btn:hover {
-  background-color: #5a67d8;
-  border-color: #5a67d8;
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .address-input-wrapper .search-btn:disabled {
-  background-color: #ccc;
-  border-color: #ccc;
+  background-color: var(--text-light);
+  border-color: var(--text-light);
   cursor: not-allowed;
 }
 
-/* Тултип (теперь появляется под полем) */
 .tooltip {
   position: absolute;
   top: 100%;
   left: 10px;
   margin-top: 5px;
-  background-color: #333;
-  color: white;
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 12px;
@@ -86,14 +85,13 @@
   left: 20px;
   border-width: 5px;
   border-style: solid;
-  border-color: transparent transparent #333 transparent;
+  border-color: transparent transparent var(--text-primary) transparent;
 }
 
-/* Кнопка "Далее" */
 .next-btn {
   height: 38px;
   padding: 0 24px;
-  background-color: #48bb78;
+  background-color: var(--success);
   color: white;
   border: none;
   border-radius: 20px;
@@ -104,7 +102,7 @@
 }
 
 .next-btn:hover {
-  background-color: #38a169;
+  background-color: var(--success-hover);
 }
 
 .suggestions-list {
@@ -115,22 +113,23 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  background-color: white;
-  border: 1px solid #ddd;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 0 0 4px 4px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
   max-height: 200px;
   overflow-y: auto;
   z-index: 1000;
-  scrollbar-width: thin;          /* для Firefox */
-  scrollbar-color: #c0c0c0 #f0f0f0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-light) var(--bg-secondary);
 }
 
 .suggestion-item {
   padding: 8px 12px;
   cursor: pointer;
   font-size: 13px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
 }
 
 .suggestion-item:last-child {
@@ -138,31 +137,30 @@
 }
 
 .suggestion-item:hover {
-  background-color: #f0f0ff;
+  background-color: var(--accent-light);
 }
 
 .suggestion-item.loading {
-  color: #999;
+  color: var(--text-light);
   font-style: italic;
   cursor: default;
 }
+
 .suggestions-list::-webkit-scrollbar {
   width: 6px;
 }
-
 .suggestions-list::-webkit-scrollbar-track {
-  background: #f0f0f0;
+  background: var(--bg-secondary);
   border-radius: 4px;
 }
-
 .suggestions-list::-webkit-scrollbar-thumb {
-  background: #c0c0c0;
+  background: var(--text-light);
   border-radius: 4px;
 }
-
 .suggestions-list::-webkit-scrollbar-thumb:hover {
-  background: #a0a0a0;
+  background: var(--text-secondary);
 }
+
 .message-popup {
   min-width: 200px;
   padding: 5px;
@@ -171,18 +169,18 @@
 .message-popup strong {
   display: block;
   font-size: 14px;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 5px;
 }
 
 .message-popup p {
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   margin: 5px 0;
 }
 
 .message-popup button {
-  background-color: #667eea;
+  background-color: var(--accent);
   color: white;
   border: none;
   border-radius: 20px;
@@ -195,8 +193,9 @@
 }
 
 .message-popup button:hover {
-  background-color: #5a67d8;
+  background-color: var(--accent-hover);
 }
+
 .input-container {
   position: relative;
   display: inline-block;
@@ -205,7 +204,7 @@
 
 .input-container input {
   width: 100%;
-  padding-right: 30px; /* отступ для иконки */
+  padding-right: 30px;
   box-sizing: border-box;
 }
 
@@ -216,12 +215,118 @@
   transform: translateY(-50%);
   cursor: pointer;
   font-size: 18px;
-  color: #999;
+  color: var(--text-light);
   user-select: none;
   transition: color 0.2s;
   z-index: 10;
 }
 
 .clear-icon:hover {
-  color: #333;
+  color: var(--text-secondary);
+}
+/* Ваш селектор слоёв — под кнопками масштаба (отступ 70px = высота кнопок + отступ) */
+.map-layer-selector {
+  position: absolute;
+  top: 90px;
+  right: 10px;
+  z-index: 1000;
+  background: var(--bg-card);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.map-layer-selector select {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.map-layer-selector .reset-auto-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.map-layer-selector .reset-auto-btn:hover {
+  background: var(--accent-hover);
+}
+
+/* Стили для атрибуции карты (нижний правый угол) */
+.leaflet-control-attribution {
+  background-color: var(--bg-card) !important;
+  color: var(--text-secondary) !important;
+  font-size: 10px !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--accent) !important;
+  text-decoration: none;
+}
+
+.leaflet-control-attribution a:hover {
+  text-decoration: underline;
+  color: var(--accent-hover) !important;
+}
+/* Перемещаем кнопки масштаба в правый верхний угол */
+.leaflet-control-zoom {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  left: auto !important;
+  margin: 0 !important;
+  float: none !important;
+  clear: none !important;
+  z-index: 1000;
+}
+.leaflet-control-container .leaflet-top {
+  position: relative;
+}
+.leaflet-control-zoom a {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-light) !important;
+  transition: background-color 0.2s;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: var(--accent-light) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+.leaflet-control-zoom {
+  background: transparent !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Попапы (всплывающие окна) */
+.leaflet-popup-content-wrapper {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+}
+
+.leaflet-popup-tip {
+  background-color: var(--bg-card) !important;
+}
+
+.leaflet-popup-close-button {
+  color: var(--text-secondary) !important;
 }
