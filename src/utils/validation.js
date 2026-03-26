@@ -31,8 +31,59 @@ export const formatPhone = (value) => {
   return value;
 };
 
+/**
+ * Нормализует номер телефона: удаляет нецифры, заменяет 8 на +7 при необходимости
+ * @param {string} phone - введённое значение (может содержать любые символы)
+ * @returns {string} строка из цифр, готовая для форматирования
+ */
+export const normalizePhone = (phone) => {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('8')) {
+    return '7' + digits.slice(1);
+  }
+  return digits;
+};
+/**
+ * Нормализует номер телефона: удаляет все нецифровые символы,
+ * и если получено 11 цифр, начинающихся с 8, заменяет 8 на 7.
+ * @param {string} phone - любое значение из поля
+ * @returns {string} строка из цифр
+ */
+export const normalizePhoneDigits = (phone) => {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('8')) {
+    return '7' + digits.slice(1);
+  }
+  return digits;
+};
+
+/**
+ * Форматирует 11 цифр в вид +7 XXX XXX XX XX.
+ * Если цифр не 11, возвращает исходную строку.
+ * @param {string} digits - строка цифр
+ * @returns {string} отформатированный номер или исходная строка
+ */
+export const formatPhoneDigits = (digits) => {
+  if (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8'))) {
+    const normalized = digits.startsWith('8') ? '7' + digits.slice(1) : digits;
+    return `+${normalized[0]} ${normalized.slice(1, 4)} ${normalized.slice(4, 7)} ${normalized.slice(7, 9)} ${normalized.slice(9, 11)}`;
+  }
+  return digits;
+};
+
+/**
+ * Основная функция: нормализует и форматирует номер в российский международный формат.
+ * Если номер не подходит (не 11 цифр, начинающихся с 7 или 8), возвращает исходную строку.
+ * @param {string} phone - введённое значение
+ * @returns {string} отформатированный номер или исходная строка
+ */
+export const normalizeAndFormatPhone = (phone) => {
+  const digits = normalizePhoneDigits(phone);
+  return formatPhoneDigits(digits);
+};
+
+// Обновляем validatePhone для строгой проверки +7
 export const validatePhone = (value) => {
-  // Точный формат: +X XXX XXX XX XX (X – цифры)
-  const phoneRegex = /^\+\d \d{3} \d{3} \d{2} \d{2}$/;
+  const phoneRegex = /^\+7 \d{3} \d{3} \d{2} \d{2}$/;
   return phoneRegex.test(value);
 };

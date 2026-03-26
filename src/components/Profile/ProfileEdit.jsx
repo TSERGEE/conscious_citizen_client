@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { streets } from '../../data/streets';
-import { validateHouse, validateApartment, validatePhone, formatPhone, validateCyrillicWithHyphen, validateCyrillicOnly } from '../../utils/validation';
+import { validateHouse, validateApartment, validatePhone, validateCyrillicWithHyphen, validateCyrillicOnly, normalizeAndFormatPhone } from '../../utils/validation';
 import './Profile.css';
 
 const ProfileEdit = () => {
@@ -34,15 +34,25 @@ const ProfileEdit = () => {
     const { name, value } = e.target;
     let newValue = value;
 
-    // Для телефона применяем форматирование
     if (name === 'phone') {
-      newValue = formatPhone(value);
+      // При вводе сохраняем только цифры
+      newValue = value.replace(/\D/g, '');
     }
 
     setFormData(prev => ({ ...prev, [name]: newValue }));
 
-    // Валидация по мере ввода
-    validateField(name, newValue);
+    if (name !== 'phone') {
+      validateField(name, newValue);
+    } else {
+      setErrors(prev => ({ ...prev, phone: '' }));
+    }
+  };
+  const handlePhoneBlur = () => {
+    const formatted = normalizeAndFormatPhone(formData.phone);
+    if (formatted !== formData.phone) {
+      setFormData(prev => ({ ...prev, phone: formatted }));
+    }
+    validateField('phone', formatted);
   };
 
   const validateField = (name, value) => {
@@ -80,7 +90,14 @@ const ProfileEdit = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
+  
+    let phoneForValidation = formData.phone;
+    const normalizedPhone = normalizeAndFormatPhone(formData.phone);
+    if (normalizedPhone !== formData.phone) {
+      setFormData(prev => ({ ...prev, phone: normalizedPhone }));
+      phoneForValidation = normalizedPhone;
+    }
+  
     const newErrors = {};
 
     // Фамилия
@@ -103,9 +120,9 @@ const ProfileEdit = () => {
     }
 
     // Телефон
-    if (!formData.phone.trim()) {
+    if (!phoneForValidation.trim()) {
       newErrors.phone = 'Обязательное поле';
-    } else if (!validatePhone(formData.phone)) {
+    } else if (!validatePhone(phoneForValidation)) {
       newErrors.phone = 'Некорректный формат (+7 XXX XXX XX XX)';
     }
 
@@ -134,7 +151,7 @@ const ProfileEdit = () => {
     }
 
     // Сохраняем
-    localStorage.setItem('userProfile', JSON.stringify(formData));
+    localStorage.setItem('userProfile', JSON.stringify({...formData, phone: phoneForValidation}));
     navigate('/profile');
   };
 
@@ -190,6 +207,7 @@ const ProfileEdit = () => {
             name="phone"
             value={formData.phone}
             onChange={handleChange}
+            onBlur={handlePhoneBlur}
             placeholder="+7 XXX XXX XX XX"
             className={errors.phone ? 'error' : ''}
           />
