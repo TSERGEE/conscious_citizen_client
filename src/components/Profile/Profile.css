@@ -136,3 +136,87 @@
 .logout-btn:hover {
   background: var(--danger-hover);
 }
+.profile-container .profile-photo {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.profile-container .profile-photo img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+}
+.profile-container .photo-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin: 0 auto;
+}
+
+.profile-container .photo-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden; /* ВАЖНО */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--accent);
+}
+
+.profile-container .photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* ВАЖНО */
+}
+
+.profile-container .photo-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border: 2px dashed var(--border-light);
+}
+
+.profile-container .photo-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.profile-container .photo-actions button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: var(--accent);
+  color: white;
+  transition: 0.3s;
+}
+
+.profile-container .photo-actions button:hover {
+  background: var(--accent-hover);
+}
+
+.profile-container .photo-actions .remove-btn {
+  background: var(--danger);
+}
+
+.profile-container .photo-actions .remove-btn:hover {
+  background: var(--danger-hover);
+}
+.profile-container .form-group:has(.photo-upload) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.profile-container .form-group:has(.photo-upload) label {
+  text-align: center;
+  width: 100%;
+}

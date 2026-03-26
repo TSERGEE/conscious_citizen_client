@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { streets } from '../../data/streets';
 import { validateHouse, validateApartment, validatePhone, validateCyrillicWithHyphen, validateCyrillicOnly, normalizeAndFormatPhone } from '../../utils/validation';
@@ -6,7 +6,7 @@ import './Profile.css';
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
-  
+  const fileInputRef = useRef(null);
   // Состояние формы
   const [formData, setFormData] = useState({
     lastName: '',
@@ -16,7 +16,8 @@ const ProfileEdit = () => {
     city: 'Самара', // по умолчанию
     street: '',
     house: '',
-    apartment: ''
+    apartment: '',
+    photo: ''
   });
 
   // Ошибки валидации
@@ -47,12 +48,32 @@ const ProfileEdit = () => {
       setErrors(prev => ({ ...prev, phone: '' }));
     }
   };
+
   const handlePhoneBlur = () => {
     const formatted = normalizeAndFormatPhone(formData.phone);
     if (formatted !== formData.phone) {
       setFormData(prev => ({ ...prev, phone: formatted }));
     }
     validateField('phone', formatted);
+  };
+
+  const handlePhotoClick = () => {
+    fileInputRef.current.click();
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData(prev => ({ ...prev, photo: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setFormData(prev => ({ ...prev, photo: '' }));
   };
 
   const validateField = (name, value) => {
@@ -164,6 +185,44 @@ const ProfileEdit = () => {
     <div className="profile-container">
       <h2>Редактирование профиля</h2>
       <form onSubmit={handleSubmit} className="profile-form">
+        <div className="form-group">
+        <label>Фото профиля</label>
+        <div className="photo-upload">
+          {/* Скрытый input */}
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handlePhotoChange}
+            style={{ display: 'none' }}
+          />
+          {/* Превью */}
+          {formData.photo ? (
+            <div className="photo-preview">
+              <img src={formData.photo} alt="preview" />
+            </div>
+          ) : (
+            <div className="photo-placeholder">
+              Нет фото
+            </div>
+          )}
+          {/* Кнопки */}
+          <div className="photo-actions">
+            <button type="button" onClick={handlePhotoClick}>
+              {formData.photo ? 'Заменить' : 'Загрузить'}
+            </button>
+            {formData.photo && (
+              <button
+                type="button"
+                className="remove-btn"
+                onClick={handleRemovePhoto}
+              >
+                Удалить
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
         <div className="form-group">
           <label>Фамилия *</label>
           <input
