@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PasswordInput from '../PasswordInput/PasswordInput';
+import { confirmPasswordReset } from '../../api';
 import '../Auth/Auth.css';
 import eyeOpen from '../../assets/icons/eye-open.png';
 import eyeClosed from '../../assets/icons/eye-closed.png';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token'); // получаем токен из URL
   const [passwords, setPasswords] = useState({
     newPassword: '',
     confirmNewPassword: ''
   });
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -54,27 +58,28 @@ const ResetPassword = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    // Имитация отправки нового пароля на сервер
-    try {
-      // Здесь будет реальный запрос на /reset-password с токеном из URL
-      // const response = await fetch('/api/reset-password', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ password: passwords.newPassword, token: '...' }),
-      //   headers: { 'Content-Type': 'application/json' }
-      // });
-      // if (!response.ok) throw new Error('Ошибка');
+    if (!token) {
+      setErrors({ form: 'Недействительная ссылка сброса пароля' });
+      return;
+    }
 
+    setIsLoading(true);
+    try {
+      await confirmPasswordReset(token, passwords.newPassword);
       alert('Пароль успешно изменён');
       navigate('/login');
-    } catch (error) {
-      alert('Ошибка при смене пароля. Попробуйте позже.');
+    } catch (err) {
+      setErrors({ form: err.message });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return (
+return (
     <div className="auth-container">
       <h2>Установка нового пароля</h2>
       <div className="description">Придумайте новый пароль для входа.</div>
+      {errors.form && <div className="server-error">{errors.form}</div>}
       <form onSubmit={handleSubmit}>
         <PasswordInput
           id="newPassword"
@@ -100,10 +105,13 @@ const ResetPassword = () => {
           iconHide={<img src={eyeClosed} alt="hide" width="20" height="20" />}
         />
 
-        <button type="submit">Сохранить пароль</button>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Сохранение...' : 'Сохранить пароль'}
+        </button>
       </form>
     </div>
   );
 };
+
 
 export default ResetPassword;

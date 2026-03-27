@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { requestPasswordReset } from '../../api'; // путь к api.js
 import '../Auth/Auth.css';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
 const validateEmail = (email) => {
   if (!email) return 'Email обязателен';
@@ -53,21 +55,15 @@ const validateEmail = (email) => {
       return;
     }
 
-    // Имитация отправки запроса на сброс пароля
+    setIsLoading(true);
     try {
-      // Здесь будет реальный запрос к API /forgot-password
-      // const response = await fetch('/api/forgot-password', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ email }),
-      //   headers: { 'Content-Type': 'application/json' }
-      // });
-      // if (!response.ok) throw new Error('Ошибка отправки');
-
-      // Показываем сообщение об успехе и перенаправляем на страницу входа
+      await requestPasswordReset(email);
       alert('Ссылка для сброса пароля отправлена на ваш email');
       navigate('/login');
-    } catch (error) {
-      alert('Ошибка при отправке. Попробуйте позже.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -89,7 +85,9 @@ const validateEmail = (email) => {
           />
           {error && <span className="error-message">{error}</span>}
         </div>
-        <button type="submit">Отправить</button>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Отправка...' : 'Отправить'}
+        </button>
       </form>
     </div>
   );

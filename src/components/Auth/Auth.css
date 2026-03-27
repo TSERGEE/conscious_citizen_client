@@ -168,3 +168,111 @@ button[type="submit"]:hover {
   color: var(--accent-hover);
   text-decoration: underline;
 }
+/* ===== Дополнительные стили для второго шага регистрации ===== */
+.auth-container .input-wrapper {
+  position: relative;
+}
+
+.auth-container .input-wrapper input {
+  width: 100%;
+  padding: 14px;
+  border: 2px solid var(--border-light);
+  border-radius: 10px;
+  font-size: 16px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: border-color 0.3s;
+}
+
+.auth-container .input-wrapper input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Список подсказок улиц */
+.auth-container .suggestions-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  box-shadow: var(--shadow-md);
+}
+
+.auth-container .suggestion-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.2s;
+}
+
+.auth-container .suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.auth-container .suggestion-item:hover {
+  background: var(--accent-light);
+}
+
+.auth-container .suggestion-item.loading {
+  color: var(--text-muted);
+  cursor: default;
+  text-align: center;
+}
+
+/* Контейнер для двух кнопок на втором шаге */
+.auth-container .step-buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+/* Общие стили для обеих кнопок */
+.auth-container .step-buttons button {
+  flex: 1;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.3s;
+  border: none;
+  background: var(--accent);
+  color: white;
+  margin-top: 0; /* отменяем margin-top, который был у submit */
+}
+
+/* Стили для кнопки "Назад" */
+.auth-container .step-buttons button.back-button {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-light);
+}
+
+.auth-container .step-buttons button.back-button:hover {
+  background: var(--border-light);
+}
+.auth-container input:disabled {
+  background-color: var(--bg-secondary);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.auth-container .server-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 14px;
+}
