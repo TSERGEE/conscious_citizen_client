@@ -30,7 +30,8 @@ const ProfileEdit = () => {
     street: '',
     house: '',
     apartment: '',
-    photo: ''
+    photo: '',
+    isAdmin: false,
   });
 
   // Ошибки валидации
@@ -46,11 +47,17 @@ const ProfileEdit = () => {
   const debouncedStreet = useDebounce(formData.street, 500);
 
   // При монтировании загружаем сохранённые данные
+  // В useEffect загрузки
   useEffect(() => {
     const saved = localStorage.getItem('userProfile');
     if (saved) {
-      setFormData(JSON.parse(saved));
-    }
+      const parsed = JSON.parse(saved);
+      setFormData(prev => ({
+        ...prev,
+        ...parsed,
+        isAdmin: parsed.isAdmin === undefined ? false : parsed.isAdmin,
+      }));
+    } 
   }, []);
 
   // Получение подсказок улиц через Nominatim

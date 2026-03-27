@@ -16,6 +16,7 @@ import AllMessagesPage from './components/MessagesPage/AllMessagesPage';
 import { MessagesProvider } from './contexts/MessagesContext';
 import DraftsPage from './components/DraftsPage/DraftsPage';
 import EditDraftPage from './components/DraftsPage/EditDraftPage';
+import AdminPanel from './components/MainPage/AdminPanel';
 import { ThemeProvider } from './contexts/ThemeContext'; // ← импорт провайдера темы
 import './styles/theme.css';
 
@@ -41,6 +42,7 @@ function App() {
             <Route path="/all-messages" element={<PrivateLayout><AllMessagesPage /></PrivateLayout>} />
             <Route path="/drafts" element={<PrivateLayout><DraftsPage /></PrivateLayout>} />
             <Route path="/edit-draft/:id" element={<PrivateLayout><EditDraftPage /></PrivateLayout>} />
+            <Route path="/admin" element={<PrivateLayout><AdminPanel /></PrivateLayout>} />
           </Routes>
         </MessagesProvider>
       </ThemeProvider>

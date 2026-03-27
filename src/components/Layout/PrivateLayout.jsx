@@ -98,7 +98,7 @@ const PrivateLayout = ({ children }) => {
           {/* ТЕМА */}
           <button onClick={toggleTheme} className="theme-toggle">
             <img
-              src={theme === 'light' ? '/images/moon.png' : '/images/sun.png'}
+              src={theme === 'light' ? '/images/sun.png' : '/images/moon.png'}
               alt="theme"
               width={24}
               height={24}
@@ -134,7 +134,10 @@ const PrivateLayout = ({ children }) => {
 
               <button onClick={() => handleNav('/about')}>О проекте</button>
               <button onClick={() => handleNav('/feedback')}>Обратная связь</button>
-
+              {/* Пункт для администратора */}
+              {userData?.isAdmin && (
+                <button onClick={() => handleNav('/admin')}>Админ панель</button>
+              )}
               <button
                 className="logout-btn"
                 onClick={() => {

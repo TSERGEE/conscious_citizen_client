@@ -55,33 +55,43 @@ const Login = () => {
     return '';
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const loginError = validateLogin(formData.login);
-    const passwordError = validatePassword(formData.password);
+  const loginError = validateLogin(formData.login);
+  const passwordError = validatePassword(formData.password);
 
-    setErrors({
-      login: loginError,
-      password: passwordError
-    });
+  setErrors({ login: loginError, password: passwordError });
 
-    if (loginError || passwordError) return;
+  if (loginError || passwordError) return;
 
-    // Имитация отправки на сервер
-    try {
-      // Здесь будет реальный запрос к API /login
-      // const response = await fetch('/api/login', { ... });
-      // if (!response.ok) throw new Error('Ошибка входа');
-      // const data = await response.json();
-      // localStorage.setItem('token', data.token);
-
-      // Пока просто переходим на профиль (или куда нужно)
-      navigate('/profile');
-    } catch (error) {
-      alert('Ошибка входа. Проверьте данные и попробуйте снова.');
+  try {
+    // Имитация проверки администратора (в реальном проекте – от сервера)
+    let isAdmin = false;
+    if (formData.login === 'admin' && formData.password === 'admin123') {
+      isAdmin = true;
     }
-  };
+
+    // Получаем существующий профиль или создаём пустой
+    let userProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
+    // Обновляем только логин и флаг админа, остальное не трогаем
+    userProfile.login = formData.login;
+    userProfile.isAdmin = isAdmin;
+    localStorage.setItem('userProfile', JSON.stringify(userProfile));
+
+    // Проверка заполненности обязательных полей
+    const requiredFields = ['lastName', 'firstName', 'phone', 'street', 'house'];
+    const isComplete = requiredFields.every(field => userProfile[field] && userProfile[field].trim() !== '');
+
+    if (!isComplete) {
+      navigate('/profile/edit');   // перенаправляем на заполнение профиля
+    } else {
+      navigate('/main');
+    }
+  } catch (error) {
+    alert('Ошибка входа. Проверьте данные и попробуйте снова.');
+  }
+};
 
   return (
     <div className="auth-container">
