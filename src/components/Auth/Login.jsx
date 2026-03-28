@@ -46,9 +46,11 @@ const Login = () => {
     return '';
   };
 
-  // Валидация пароля (аналогично регистрации)
-  const validatePassword = (password) => {
+  // Валидация пароля с учётом логина
+  const validatePassword = (password, login) => {
     if (!password) return 'Пароль обязателен';
+    // Исключение для admin/admin
+    if (login === 'admin' && password === 'admin') return '';
     if (password.length < 8) return 'Пароль должен быть не менее 8 символов';
     if (!/^[A-Za-z0-9 !"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]+$/.test(password)) {
       return 'Пароль содержит недопустимые символы';
@@ -60,7 +62,7 @@ const handleSubmit = async (e) => {
   e.preventDefault();
 
   const loginError = validateLogin(formData.login);
-  const passwordError = validatePassword(formData.password);
+  const passwordError = validatePassword(formData.password, formData.login); // передаём логин
   setErrors({ login: loginError, password: passwordError });
   if (loginError || passwordError) return;
 

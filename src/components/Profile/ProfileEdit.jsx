@@ -31,7 +31,7 @@ const ProfileEdit = () => {
     house: '',
     apartment: '',
     photo: '',
-    isAdmin: false,
+    isAdmin: true,
   });
 
   // Ошибки валидации
