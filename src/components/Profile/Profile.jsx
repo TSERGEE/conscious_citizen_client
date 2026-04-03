@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
+import { getUser, getUserRole } from '../../api';
 import './Profile.css';
 
 const Profile = () => {
@@ -10,18 +11,36 @@ const Profile = () => {
   const messageCount = messages.filter(msg => !msg.isDraft).length;
 
   useEffect(() => {
-    const saved = localStorage.getItem('userProfile');
-    if (saved) {
-      setUserData(JSON.parse(saved));
-    } else {
-      // Если нет данных, перенаправляем на редактирование
-      navigate('/profile/edit');
-    }
+    const loadUser = async () => {
+      try {
+        // Исправлено: берём логин из правильного ключа localStorage
+        const login = localStorage.getItem('userLogin');
+        if (!login) {
+          navigate('/login');
+          return;
+        }
+
+        const user = await getUser(login);
+        const role = await getUserRole(login);
+
+        setUserData({
+          ...user,
+          role,
+        });
+
+      } catch (e) {
+        console.error(e);
+        navigate('/login');
+      }
+    };
+
+    loadUser();
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem('userProfile');
-    // Здесь также можно очистить токен и перенаправить на логин
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userLogin');
     navigate('/login');
   };
 
@@ -41,15 +60,11 @@ const Profile = () => {
       )}
       <div className="profile-info">
         <p>
-          <strong>ФИО:</strong>{' '}
-          {userData.lastName} {userData.firstName} {userData.middleName || ''}
+          <strong>ФИО:</strong> {userData.fullName}
         </p>
         <p><strong>Телефон:</strong> {userData.phone}</p>
-        <p>
-          <strong>Адрес:</strong>{' '}
-          {userData.city}, {userData.street}, д. {userData.house}
-          {userData.apartment ? `, кв. ${userData.apartment}` : ''}
-        </p>
+        <p><strong>Email:</strong> {userData.email}</p>   {/* Добавлено */}
+        <p><strong>Адрес:</strong> {userData.address}</p>
         <p><strong>Количество сообщений:</strong> {messageCount}</p>
       </div>
       <div className="profile-actions">

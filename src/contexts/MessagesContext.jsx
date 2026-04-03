@@ -1,5 +1,6 @@
 // contexts/MessagesContext.js
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
+import { getAllIncidents, createIncident, getIncidentById } from '../api';
 
 const MessagesContext = createContext();
 
@@ -7,50 +8,62 @@ export const useMessages = () => useContext(MessagesContext);
 
 export const MessagesProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Добавление нового сообщения (по умолчанию опубликованное)
-  const addMessage = (messageData) => {
-    const newMessage = {
-      id: Date.now(), // или использовать генератор ID
-      ...messageData,
-      isDraft: messageData.isDraft || false,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages(prev => [...prev, newMessage]);
-    return newMessage.id;
+  const loadMessages = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const incidents = await getAllIncidents();
+      const normalized = incidents.map(inc => ({
+        ...inc,
+        active: inc.active === true || inc.active === 't' || inc.active === 'true',
+      }));
+      setMessages(normalized);
+      //console.log('Incidents from server:', incidents);
+      //setMessages(incidents);
+    } catch (err) {
+      console.error('Ошибка загрузки инцидентов:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const addMessage = async (messageData) => {
+    try {
+      const newIncident = await createIncident(messageData);
+      await loadMessages(); // обновляем список после создания
+      return newIncident.id;
+    } catch (err) {
+      console.error('Ошибка создания инцидента:', err);
+      throw err;
+    }
   };
 
-  // Получение сообщения по id
-  const getMessage = (id) => messages.find(msg => msg.id === id);
-
-  // Обновление существующего сообщения
-  const updateMessage = (id, updatedData) => {
-    setMessages(prev =>
-      prev.map(msg => (msg.id === id ? { ...msg, ...updatedData } : msg))
-    );
+  const getMessage = async (id) => {
+    try {
+      return await getIncidentById(id);
+    } catch (err) {
+      console.error(`Ошибка получения инцидента ${id}:`, err);
+      throw err;
+    }
   };
 
-  // Публикация черновика (снимает флаг isDraft)
-  const publishDraft = (id) => {
-    setMessages(prev =>
-      prev.map(msg => (msg.id === id ? { ...msg, isDraft: false } : msg))
-    );
-  };
-
-  // Удаление сообщения (по желанию)
-  const deleteMessage = (id) => {
-    setMessages(prev => prev.filter(msg => msg.id !== id));
-  };
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
 
   return (
     <MessagesContext.Provider
       value={{
         messages,
+        loading,
+        error,
         addMessage,
         getMessage,
-        updateMessage,
-        publishDraft,
-        deleteMessage,
+        refreshMessages: loadMessages,
       }}
     >
       {children}

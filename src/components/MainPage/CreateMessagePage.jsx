@@ -19,15 +19,23 @@ const CreateMessagePage = () => {
 
   const [topic, setTopic] = useState('');
   const [description, setDescription] = useState('');
-  const [photos, setPhotos] = useState([]); // массив объектов { id, file, previewUrl }
+  const [photos, setPhotos] = useState([]);
   const [category, setCategory] = useState('');
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
-  const pendingActionRef = useRef('add'); // 'add' или 'replace'
+  const pendingActionRef = useRef('add');
 
-  const handlePhotoClick = () => fileInputRef.current.click();
+  const handleAddPhotoClick = () => {
+    pendingActionRef.current = 'add';
+    fileInputRef.current.click();
+  };
 
-  // Добавление новых файлов к существующим
+  const handleReplacePhotoClick = () => {
+    pendingActionRef.current = 'replace';
+    fileInputRef.current.click();
+  };
+
   const addFiles = (newFiles) => {
     const newPhotos = newFiles.map((file, index) => ({
       id: Date.now() + index,
@@ -36,9 +44,8 @@ const CreateMessagePage = () => {
     }));
     setPhotos(prev => [...prev, ...newPhotos]);
   };
-  // Замена всех текущих файлов новыми
+
   const replaceFiles = (newFiles) => {
-    // Освобождаем старые URL
     photos.forEach(photo => URL.revokeObjectURL(photo.previewUrl));
     const newPhotos = newFiles.map((file, index) => ({
       id: Date.now() + index,
@@ -47,44 +54,21 @@ const CreateMessagePage = () => {
     }));
     setPhotos(newPhotos);
   };
-  // Обработчик клика по кнопке добавления
-  const handleAddPhotoClick = () => {
-    pendingActionRef.current = 'add';
-    fileInputRef.current.click();
-  };
 
-  // Обработчик клика по кнопке замены
-  const handleReplacePhotoClick = () => {
-    pendingActionRef.current = 'replace';
-    fileInputRef.current.click();
-  };
-  // Обработчик выбора файлов
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-
-    if (pendingActionRef.current === 'add') {
-      addFiles(files);
-    } else {
-      replaceFiles(files);
-    }
-
-    // Очищаем поле input, чтобы можно было повторно выбрать те же файлы
+    if (pendingActionRef.current === 'add') addFiles(files);
+    else replaceFiles(files);
     e.target.value = '';
   };
 
-  // Удаление конкретного фото
   const removePhoto = (id) => {
     setPhotos(prev => {
       const photoToRemove = prev.find(p => p.id === id);
       if (photoToRemove) URL.revokeObjectURL(photoToRemove.previewUrl);
       return prev.filter(p => p.id !== id);
     });
-  };
-
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) setPhoto(file);
   };
 
   const validateForm = () => {
@@ -95,8 +79,7 @@ const CreateMessagePage = () => {
     return newErrors;
   };
 
-  // Публикация сообщения
-  const handlePublish = (e) => {
+  const handlePublish = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -104,29 +87,26 @@ const CreateMessagePage = () => {
       return;
     }
 
-    const photoUrls = photos.map(photo => photo.previewUrl);
-    // Если фото нет, можно использовать плейсхолдер (но лучше оставить пустой массив)
-    if (photoUrls.length === 0) photoUrls.push(placeholderImg);
-
-    const newMessage = {
-      topic,
-      description,
-      type: category,
-      photos: photoUrls,
-      address,
-      lat,
-      lng,
-      userId: 1,
-      isDraft: false,
-    };
-
-    const messageId = addMessage(newMessage);
-    navigate(`/message/${messageId}`);
+    setIsSubmitting(true);
+    try {
+      const newId = await addMessage({
+        title: topic,
+        description,
+        type: category,
+        address,
+        latitude: lat,
+        longitude: lng,
+        active: true, // опубликовано
+      });
+      navigate(`/message/${newId}`);
+    } catch (err) {
+      alert('Ошибка при публикации: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-
-  // Сохранение как черновик (isDraft = true)
-  const handleSaveDraft = (e) => {
+  const handleSaveDraft = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -134,60 +114,56 @@ const CreateMessagePage = () => {
       return;
     }
 
-    const photoUrls = photos.map(photo => photo.previewUrl);
-    if (photoUrls.length === 0) photoUrls.push(placeholderImg);
-
-    const draftMessage = {
-      topic,
-      description,
-      type: category,
-      photos: photoUrls,
-      address,
-      lat,
-      lng,
-      userId: 1,
-      isDraft: true,
-    };
-
-    addMessage(draftMessage);
-    navigate('/drafts');
+    setIsSubmitting(true);
+    try {
+      await addMessage({
+        title: topic,
+        description,
+        type: category,
+        address,
+        latitude: lat,
+        longitude: lng,
+        active: false, // черновик
+      });
+      navigate('/drafts'); // страница со списком черновиков
+    } catch (err) {
+      alert('Ошибка при сохранении черновика: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!address) return null;
 
   return (
-  <div className="create-message-page">
+    <div className="create-message-page">
       <h1 className="page-title">Создание сообщения</h1>
-      <h2 className="section-subtitle">Опишите проблему</h2>
 
       <form onSubmit={handlePublish} className="create-message-form">
-        {/* Тема */}
         <div className="form-group">
           <label htmlFor="topic">Тема сообщения</label>
           <input
             type="text"
             id="topic"
             value={topic}
-            onChange={(e) => setTopic(e.target.value)}
+            onChange={e => setTopic(e.target.value)}
             className={errors.topic ? 'error' : ''}
           />
           {errors.topic && <span className="error-message">{errors.topic}</span>}
         </div>
 
-        {/* Текст сообщения */}
         <div className="form-group">
           <label htmlFor="description">Текст сообщения</label>
           <textarea
             id="description"
             rows="4"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={e => setDescription(e.target.value)}
             className={errors.description ? 'error' : ''}
           />
           {errors.description && <span className="error-message">{errors.description}</span>}
         </div>
 
-        {/* Фото */}
         <div className="form-group">
           <label>Фото</label>
           <div className="photo-upload">
@@ -207,33 +183,23 @@ const CreateMessagePage = () => {
             />
           </div>
 
-          {/* Превью выбранных фото */}
           {photos.length > 0 && (
             <div className="photo-preview-list">
               {photos.map(photo => (
                 <div key={photo.id} className="photo-preview-item">
                   <img src={photo.previewUrl} alt="preview" className="photo-preview" />
-                  <button
-                    type="button"
-                    className="remove-photo-btn"
-                    onClick={() => removePhoto(photo.id)}
-                  >
-                    ✕
-                  </button>
+                  <button type="button" className="remove-photo-btn" onClick={() => removePhoto(photo.id)}>✕</button>
                 </div>
               ))}
             </div>
           )}
-          {errors.photos && <span className="error-message">{errors.photos}</span>}
         </div>
 
-        {/* Адрес */}
         <div className="form-group">
           <label>Адрес</label>
           <div className="address-display">{address}</div>
         </div>
 
-        {/* Рубрика */}
         <div className="form-group">
           <label>Рубрика</label>
           <div className="radio-group">
@@ -241,9 +207,9 @@ const CreateMessagePage = () => {
               <input
                 type="radio"
                 name="category"
-                value="parking"
-                checked={category === 'parking'}
-                onChange={(e) => setCategory(e.target.value)}
+                value="PARKING"
+                checked={category === 'PARKING'}
+                onChange={e => setCategory(e.target.value)}
               />
               Парковка
             </label>
@@ -251,9 +217,9 @@ const CreateMessagePage = () => {
               <input
                 type="radio"
                 name="category"
-                value="expired"
-                checked={category === 'expired'}
-                onChange={(e) => setCategory(e.target.value)}
+                value="FOOD_EXPIRED"
+                checked={category === 'FOOD_EXPIRED'}
+                onChange={e => setCategory(e.target.value)}
               />
               Просроченные продукты
             </label>
@@ -261,13 +227,12 @@ const CreateMessagePage = () => {
           {errors.category && <span className="error-message">{errors.category}</span>}
         </div>
 
-        {/* Кнопки действий */}
         <div className="form-actions">
-          <button type="submit" className="submit-btn">
-            Опубликовать сообщение
+          <button type="submit" className="submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? 'Публикация...' : 'Опубликовать сообщение'}
           </button>
-          <button type="button" onClick={handleSaveDraft} className="submit-btn">
-            Сохранить как черновик
+          <button type="button" onClick={handleSaveDraft} className="submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? 'Сохранение...' : 'Сохранить как черновик'}
           </button>
         </div>
       </form>

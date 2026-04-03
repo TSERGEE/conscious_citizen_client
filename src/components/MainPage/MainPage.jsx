@@ -1,9 +1,11 @@
+// src/pages/MainPage/MainPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import LeftPanel from './LeftPanel';
 import { useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLocation } from 'react-router-dom';
 import {
   MapContainer,
   TileLayer,
@@ -11,7 +13,6 @@ import {
   Popup,
   useMapEvents,
   useMap,
-  LayersControl,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
@@ -19,7 +20,7 @@ import 'leaflet-defaulticon-compatibility';
 import './MainPage.css';
 import L from 'leaflet';
 
-// Определяем доступные слои
+// Все слои карты (восстановлены полностью)
 const layers = {
   standard: {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -28,28 +29,29 @@ const layers = {
   },
   cyclosm: {
     url: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
-    attribution: '<a href="https://github.com/cyclosm/cyclosm-cartocss-style" target="_blank">CyclOSM</a> Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    attribution: '<a href="https://github.com/cyclosm/cyclosm-cartocss-style" target="_blank">CyclOSM</a> Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
     name: 'Велосипедная',
   },
   humanitarian: {
     url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>, Tiles by <a href="https://www.hotosm.org/">HOT</a>',
     name: 'Гуманитарная',
   },
   darkCarto: {
     url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>, &copy; OSM',
     name: 'Тёмная (CartoDB)',
   },
   darkStadia: {
     url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors',
+    attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; OSM',
     name: 'Тёмная (OpenMapTiles)',
   },
 };
 
+// Иконки
 const parkingIcon = new L.Icon({
-  iconUrl: '/images/parking31.png', // путь к иконке
+  iconUrl: '/images/parking31.png',
   shadowUrl: '/images/shadow.png',
   iconSize: [48, 48],
   iconAnchor: [24, 48],
@@ -65,17 +67,14 @@ const foodIcon = new L.Icon({
   popupAnchor: [0, -50],
   shadowSize: [48, 48],
 });
-const iconMap = {
-  parking: parkingIcon,
-  food: foodIcon,
-};
 
 const getIconByType = (type) => {
-  if (type === 'parking') return parkingIcon;
-  if (type === 'expired') return foodIcon;
+  const t = type?.toLowerCase();
+  if (t === 'parking') return parkingIcon;
+  if (t === 'expired' || t === 'food_expired') return foodIcon;
   return new L.Icon.Default();
 };
-// Компонент для обработки кликов по карте
+
 function MapClickHandler({ onMapClick }) {
   useMapEvents({
     click(e) {
@@ -85,7 +84,6 @@ function MapClickHandler({ onMapClick }) {
   return null;
 }
 
-// Компонент для программного перемещения карты
 function MapController({ center }) {
   const map = useMap();
   if (center) {
@@ -94,89 +92,65 @@ function MapController({ center }) {
   return null;
 }
 
-// Вспомогательная функция для проверки, входит ли адрес в зону обслуживания
-const isInServiceArea = (address) => {
-  return address.toLowerCase().includes('самара');
-};
+const isInServiceArea = (address) =>
+  address.toLowerCase().includes('самара');
 
-// Функция debounce для ограничения частоты запросов
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
-
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
   }, [value, delay]);
-
   return debouncedValue;
 }
 
 const MainPage = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const location = useLocation();
+  const { messages, refreshMessages } = useMessages();  // только чтение, без addMessage
 
-  const { theme } = useTheme(); // получаем текущую тему
   const [currentLayer, setCurrentLayer] = useState(layers.standard);
   const [manualOverride, setManualOverride] = useState(false);
-
-  // При смене темы, если нет ручного выбора, выбираем слой по умолчанию
-  useEffect(() => {
-    if (!manualOverride) {
-      if (theme === 'dark') {
-        setCurrentLayer(layers.darkStadia); // можно заменить на darkStadia, если хотите
-      } else {
-        setCurrentLayer(layers.standard);
-      }
-    }
-  }, [theme, manualOverride]);
-
-  // Функция ручного выбора слоя
-  const selectLayer = (layerKey) => {
-    setCurrentLayer(layers[layerKey]);
-    setManualOverride(true);
-  };
-
-  // Сброс к автоматическому выбору по теме
-  const resetToAuto = () => {
-    setManualOverride(false);
-    setCurrentLayer(theme === 'dark' ? layers.darkCarto : layers.standard);
-  };
-
-  const { messages } = useMessages();
 
   const [markerPosition, setMarkerPosition] = useState(null);
   const [addressInput, setAddressInput] = useState('');
   const [searchCenter, setSearchCenter] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-  
-  // Состояния для подсказок
+
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const suggestionsRef = useRef(null);
-
-  // Состояние для портала – храним ссылку на элемент #search-root
   const [searchRoot, setSearchRoot] = useState(null);
-
-  // Debounce для адреса (задержка 500 мс)
   const debouncedAddress = useDebounce(addressInput, 500);
+  useEffect(() => {
+    refreshMessages(); // подгружаем свежие инциденты с сервера
+  }, [refreshMessages, location.key]);
+  // Автовыбор слоя по теме
+  useEffect(() => {
+    if (!manualOverride) {
+      setCurrentLayer(theme === 'dark' ? layers.darkStadia : layers.standard);
+    }
+  }, [theme, manualOverride]);
 
-  // Эффект для поиска элемента #search-root после монтирования
+  const selectLayer = (layerKey) => {
+    setCurrentLayer(layers[layerKey]);
+    setManualOverride(true);
+  };
+
+  const resetToAuto = () => {
+    setManualOverride(false);
+    setCurrentLayer(theme === 'dark' ? layers.darkStadia : layers.standard);
+  };
+
   useEffect(() => {
     const el = document.getElementById('search-root');
-    if (el) {
-      setSearchRoot(el);
-    } else {
-      console.error('search-root not found – проверьте PrivateLayout');
-    }
+    if (el) setSearchRoot(el);
   }, []);
 
-  // Эффект для запроса подсказок при изменении debouncedAddress
+  // Подсказки адресов
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (!debouncedAddress.trim() || debouncedAddress.length < 3) {
@@ -184,58 +158,51 @@ const MainPage = () => {
         setShowSuggestions(false);
         return;
       }
-
       setIsFetchingSuggestions(true);
       try {
         const query = `${debouncedAddress}, Самара`;
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ru&limit=5`
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+            query
+          )}&countrycodes=ru&limit=5`
         );
-        const data = await response.json();
+        const data = await res.json();
         setSuggestions(data);
         setShowSuggestions(data.length > 0);
-      } catch (error) {
-        console.error('Ошибка получения подсказок:', error);
+      } catch {
         setSuggestions([]);
         setShowSuggestions(false);
       } finally {
         setIsFetchingSuggestions(false);
       }
     };
-
     fetchSuggestions();
   }, [debouncedAddress]);
 
-  // Закрыть подсказки при клике вне
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target))
         setShowSuggestions(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Обратное геокодирование (получение адреса по координатам)
   const reverseGeocode = async (lat, lng) => {
     try {
-      const response = await fetch(
+      const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
       );
-      const data = await response.json();
+      const data = await res.json();
       return data.display_name || 'Адрес не найден';
-    } catch (error) {
-      console.error('Ошибка обратного геокодинга:', error);
+    } catch {
       return null;
     }
   };
 
-  // Обработчик клика по карте
   const handleMapClick = async (latlng) => {
     setMarkerPosition(latlng);
     setSearchCenter(latlng);
-
     const address = await reverseGeocode(latlng.lat, latlng.lng);
     if (address && isInServiceArea(address)) {
       setAddressInput(address);
@@ -246,20 +213,29 @@ const MainPage = () => {
     setShowSuggestions(false);
   };
 
-  // Прямое геокодирование (поиск координат по адресу)
+  const handleSuggestionClick = (suggestion) => {
+    const newPos = { lat: parseFloat(suggestion.lat), lng: parseFloat(suggestion.lon) };
+    if (isInServiceArea(suggestion.display_name)) {
+      setMarkerPosition(newPos);
+      setSearchCenter(newPos);
+      setAddressInput(suggestion.display_name);
+    } else {
+      alert('Данный адрес не входит в зону обслуживания проекта.');
+    }
+    setShowSuggestions(false);
+  };
+
   const searchAddress = async (query) => {
     if (!query.trim()) return;
-
     setIsSearching(true);
     try {
-      const response = await fetch(
+      const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`
       );
-      const data = await response.json();
-      if (data && data.length > 0) {
+      const data = await res.json();
+      if (data.length > 0) {
         const { lat, lon, display_name } = data[0];
         const newPos = { lat: parseFloat(lat), lng: parseFloat(lon) };
-
         if (isInServiceArea(display_name)) {
           setMarkerPosition(newPos);
           setSearchCenter(newPos);
@@ -270,35 +246,19 @@ const MainPage = () => {
       } else {
         alert('Адрес не найден');
       }
-    } catch (error) {
-      console.error('Ошибка геокодинга:', error);
-      alert('Ошибка при поиске адреса');
+    } catch {
+      alert('Ошибка геокодинга');
     } finally {
       setIsSearching(false);
       setShowSuggestions(false);
     }
   };
 
-  // Обработчик выбора подсказки
-  const handleSuggestionClick = (suggestion) => {
-    const { lat, lon, display_name } = suggestion;
-    const newPos = { lat: parseFloat(lat), lng: parseFloat(lon) };
-    if (isInServiceArea(display_name)) {
-      setMarkerPosition(newPos);
-      setSearchCenter(newPos);
-      setAddressInput(display_name);
-    } else {
-      alert('Данный адрес не входит в зону обслуживания проекта.');
-    }
-    setShowSuggestions(false);
-  };
-
-  // Обработчик нажатия кнопки "Найти"
   const handleSearchClick = () => {
     searchAddress(addressInput);
   };
 
-  // Переход к созданию сообщения
+  // Переход к созданию сообщения (без локального addMessage)
   const handleNext = () => {
     if (!markerPosition) {
       alert('Сначала выберите место на карте или найдите адрес.');
@@ -318,29 +278,20 @@ const MainPage = () => {
   };
 
   const handleFocus = () => {
-    if (!addressInput) {
-      setShowTooltip(true);
-    }
-    if (suggestions.length > 0) {
-      setShowSuggestions(true);
-    }
+    if (!addressInput) setShowTooltip(true);
+    if (suggestions.length > 0) setShowSuggestions(true);
   };
-
-  const handleBlur = () => {
-    setShowTooltip(false);
-  };
-  
+  const handleBlur = () => setShowTooltip(false);
   const handleClearInput = () => {
     setAddressInput('');
     setMarkerPosition(null);
     setSearchCenter(null);
     setShowSuggestions(false);
   };
-  // Контент для шапки
+
   const headerContent = (
     <div className="header-search-block">
       <div className="address-input-wrapper" ref={suggestionsRef}>
-        {/* + Оборачиваем input и иконку в дополнительный контейнер */}
         <div className="input-container">
           <input
             type="text"
@@ -350,31 +301,20 @@ const MainPage = () => {
             onFocus={handleFocus}
             onBlur={handleBlur}
           />
-          {/* + Иконка крестика появляется только при наличии текста */}
           {addressInput && (
-            <span
-              className="clear-icon"
-              onClick={handleClearInput}
-              role="button"
-              tabIndex={0}
-              aria-label="Очистить поле"
-            >
+            <span className="clear-icon" onClick={handleClearInput}>
               ✕
             </span>
           )}
         </div>
-        {showTooltip && (
-          <div className="tooltip">
-            Введите адрес вручную
-          </div>
-        )}
+        {showTooltip && <div className="tooltip">Введите адрес вручную</div>}
         {showSuggestions && (
           <ul className="suggestions-list">
             {isFetchingSuggestions && <li className="suggestion-item loading">Загрузка...</li>}
             {!isFetchingSuggestions &&
-              suggestions.map((suggestion, index) => (
+              suggestions.map((suggestion, idx) => (
                 <li
-                  key={index}
+                  key={idx}
                   className="suggestion-item"
                   onClick={() => handleSuggestionClick(suggestion)}
                 >
@@ -383,11 +323,7 @@ const MainPage = () => {
               ))}
           </ul>
         )}
-        <button
-          className="search-btn"
-          onClick={handleSearchClick}
-          disabled={isSearching}
-        >
+        <button className="search-btn" onClick={handleSearchClick} disabled={isSearching}>
           {isSearching ? 'Поиск...' : 'Найти'}
         </button>
       </div>
@@ -401,26 +337,21 @@ const MainPage = () => {
     <div className="main-page">
       {searchRoot && ReactDOM.createPortal(headerContent, searchRoot)}
       <LeftPanel />
-
       <MapContainer center={[53.195873, 50.100193]} zoom={13} className="map-container">
-        {/* Динамический слой */}
         <TileLayer url={currentLayer.url} attribution={currentLayer.attribution} />
 
-        {/* Селектор слоёв (вместо LayersControl) */}
         <div className="map-layer-selector">
           <select
-            value={Object.keys(layers).find(key => layers[key] === currentLayer) || ''}
+            value={Object.keys(layers).find((key) => layers[key] === currentLayer) || ''}
             onChange={(e) => selectLayer(e.target.value)}
           >
             {Object.entries(layers).map(([key, layer]) => (
-              <option key={key} value={key}>{layer.name}</option>
+              <option key={key} value={key}>
+                {layer.name}
+              </option>
             ))}
           </select>
-          {manualOverride && (
-            <button onClick={resetToAuto} className="reset-auto-btn">
-              Авто
-            </button>
-          )}
+          {manualOverride && <button onClick={resetToAuto}>Авто</button>}
         </div>
 
         <MapClickHandler onMapClick={handleMapClick} />
@@ -429,19 +360,25 @@ const MainPage = () => {
             <Popup>Выбранное место</Popup>
           </Marker>
         )}
+
         {messages
-          .filter(msg => msg.lat && msg.lng && !msg.isDraft)
-          .map(msg => (
-            <Marker key={msg.id} position={[msg.lat, msg.lng]} icon={getIconByType(msg.type)}>
+          .filter((msg) => msg.latitude && msg.longitude && msg.active !== false) // отображаем активные (active=true)
+          .map((msg) => (
+            <Marker
+              key={msg.id}
+              position={[msg.latitude, msg.longitude]}
+              icon={getIconByType(msg.type)}
+            >
               <Popup>
                 <div className="message-popup">
-                  <strong>{msg.topic}</strong>
+                  <strong>{msg.title}</strong>
                   <p>{msg.address}</p>
                   <button onClick={() => navigate(`/message/${msg.id}`)}>Подробнее</button>
                 </div>
               </Popup>
             </Marker>
           ))}
+
         <MapController center={searchCenter} />
       </MapContainer>
     </div>

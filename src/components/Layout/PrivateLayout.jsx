@@ -135,7 +135,7 @@ const PrivateLayout = ({ children }) => {
               <button onClick={() => handleNav('/about')}>О проекте</button>
               <button onClick={() => handleNav('/feedback')}>Обратная связь</button>
               {/* Пункт для администратора */}
-              {userData?.isAdmin && (
+              {userData?.role === 'ADMIN' && (
                 <button onClick={() => handleNav('/admin')}>Админ панель</button>
               )}
               <button

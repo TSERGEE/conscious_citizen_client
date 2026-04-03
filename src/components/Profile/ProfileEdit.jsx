@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { validateHouse, validateApartment, validatePhone, validateCyrillicWithHyphen, validateCyrillicOnly, normalizeAndFormatPhone } from '../../utils/validation';
 import './Profile.css';
+import { getUser } from '../../api';
 
 // Простейший debounce hook
 const useDebounce = (value, delay) => {
@@ -30,6 +31,7 @@ const ProfileEdit = () => {
     street: '',
     house: '',
     apartment: '',
+    email: '',        // <-- добавить
     photo: '',
     isAdmin: true,
   });
@@ -46,19 +48,61 @@ const ProfileEdit = () => {
   // Debounce для ввода улицы
   const debouncedStreet = useDebounce(formData.street, 500);
 
-  // При монтировании загружаем сохранённые данные
-  // В useEffect загрузки
   useEffect(() => {
-    const saved = localStorage.getItem('userProfile');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setFormData(prev => ({
-        ...prev,
-        ...parsed,
-        isAdmin: parsed.isAdmin === undefined ? false : parsed.isAdmin,
-      }));
-    } 
-  }, []);
+    const loadUser = async () => {
+      try {
+        const login = localStorage.getItem('userLogin');
+
+        if (!login) {
+          navigate('/login');
+          return;
+        }
+
+        const user = await getUser(login);
+
+        const fullNameParts = user.fullName?.split(' ') || [];
+
+        const lastName = fullNameParts[0] || '';
+        const firstName = fullNameParts[1] || '';
+        const middleName = fullNameParts[2] || '';
+        
+        const addressParts = user.address?.split(',') || [];
+
+        const city = addressParts[0]?.trim() || 'Самара';
+        const street = addressParts[1]?.trim() || '';
+        const extractNumberPart = (s) => {
+          const match = s?.match(/(\d.*)/); // берём всё от первой цифры до конца
+          return match ? match[1].trim() : '';
+        };
+
+        const house = extractNumberPart(addressParts[2]);
+        const apartment = extractNumberPart(addressParts[3]);
+
+        setFormData(prev => ({
+          ...prev,
+          lastName,
+          firstName,
+          middleName,
+          phone: user.phone || '',
+          email: user.email || '',
+          city,
+          street,
+          house,
+          apartment
+        }));
+        if (street) {
+          setSelectedStreet(true);
+        }
+        //console.log(localStorage.getItem('userLogin'));
+
+      } catch (e) {
+        console.error(e);
+        navigate('/profile');
+      }
+    };
+
+    loadUser();
+  }, [navigate]);
 
   // Получение подсказок улиц через Nominatim
   useEffect(() => {
@@ -191,11 +235,12 @@ const ProfileEdit = () => {
     setErrors(prev => ({ ...prev, street: '' }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     let phoneForValidation = formData.phone;
     const normalizedPhone = normalizeAndFormatPhone(formData.phone);
+    
     if (normalizedPhone !== formData.phone) {
       setFormData(prev => ({ ...prev, phone: normalizedPhone }));
       phoneForValidation = normalizedPhone;
@@ -203,49 +248,44 @@ const ProfileEdit = () => {
 
     const newErrors = {};
 
-    // Фамилия
+    // ===== ВАЛИДАЦИЯ (оставляем ВСЁ) =====
+
     if (!formData.lastName.trim()) {
       newErrors.lastName = 'Обязательное поле';
     } else if (!validateCyrillicWithHyphen(formData.lastName)) {
       newErrors.lastName = 'Только кириллица и дефис';
     }
 
-    // Имя
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'Обязательное поле';
     } else if (!validateCyrillicOnly(formData.firstName)) {
       newErrors.firstName = 'Только кириллица';
     }
 
-    // Отчество
     if (formData.middleName && !validateCyrillicOnly(formData.middleName)) {
       newErrors.middleName = 'Только кириллица';
     }
 
-    // Телефон
     if (!phoneForValidation.trim()) {
       newErrors.phone = 'Обязательное поле';
     } else if (!validatePhone(phoneForValidation)) {
-      newErrors.phone = 'Некорректный формат (+7 XXX XXX XX XX)';
+      newErrors.phone = 'Некорректный формат';
     }
 
-    // Улица
     if (!formData.street.trim()) {
       newErrors.street = 'Обязательное поле';
-    } else if (!selectedStreet) {
-      newErrors.street = 'Пожалуйста, выберите улицу из списка';
-    }
+    } /*else if (!selectedStreet) {
+      newErrors.street = 'Выберите из списка';
+    }*/
 
-    // Дом
     if (!formData.house.trim()) {
       newErrors.house = 'Обязательное поле';
     } else if (!validateHouse(formData.house)) {
-      newErrors.house = 'Только цифры, кириллица, тире, дробь';
+      newErrors.house = 'Некорректный формат';
     }
 
-    // Квартира
     if (formData.apartment && !validateApartment(formData.apartment)) {
-      newErrors.apartment = 'Только цифры и кириллица';
+      newErrors.apartment = 'Некорректный формат';
     }
 
     setErrors(newErrors);
@@ -254,9 +294,41 @@ const ProfileEdit = () => {
       return;
     }
 
-    // Сохраняем
-    localStorage.setItem('userProfile', JSON.stringify({ ...formData, phone: phoneForValidation }));
-    navigate('/profile');
+    // ===== ОТПРАВКА НА СЕРВЕР =====
+
+    try {
+      const login = localStorage.getItem('userLogin');
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`http://localhost:54455/user/${login}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          login: login,
+          fullName: `${formData.lastName} ${formData.firstName} ${formData.middleName || ''}`,
+          phone: phoneForValidation,
+          email: formData.email,
+          address: `${formData.city}, ${formData.street}, ${formData.house}, ${formData.apartment || ''}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || 'Ошибка обновления профиля');
+      }
+
+      const updatedUser = await response.json();
+      // можно сохранить локально (кэш)
+      localStorage.setItem('userProfile', JSON.stringify(updatedUser));
+
+      navigate('/profile');
+
+    } catch (err) {
+      console.error(err);
+      alert('Ошибка при сохранении профиля');
+    }
   };
 
   return (
@@ -341,6 +413,15 @@ const ProfileEdit = () => {
             className={errors.phone ? 'error' : ''}
           />
           {errors.phone && <span className="error-message">{errors.phone}</span>}
+        </div>
+        <div className="form-group">
+          <label>Email *</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            className="readonly-field"
+          />
         </div>
 
         <div className="form-group">
