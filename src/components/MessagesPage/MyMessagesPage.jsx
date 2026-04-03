@@ -5,14 +5,15 @@ import './MessagesPage.css';
 
 const MyMessagesPage = () => {
   const { messages } = useMessages();
-  const currentUserId = 1; // замените на реальный ID из контекста аутентификации
+  const userId = Number(localStorage.getItem('userId')); // текущий пользователь
 
-  const myMessages = messages.filter(msg => msg.userId === currentUserId);
+  const myMessages = messages.filter(msg => msg.userId === userId && msg.active !== true);
+
 
   return (
     <div className="messages-page">
       <h1 className="page-title">Мои сообщения</h1>
-      <MessagesList messages={myMessages}/>
+      <MessagesList messages={myMessages} />
     </div>
   );
 };

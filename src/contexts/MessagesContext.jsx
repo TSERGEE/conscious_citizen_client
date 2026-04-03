@@ -1,6 +1,7 @@
 // contexts/MessagesContext.js
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
-import { getAllIncidents, createIncident, getIncidentById } from '../api';
+import { getAllIncidents, createIncident, getIncidentById, uploadIncidentPhoto,  getIncidentPhotos } from '../api';
+import placeholderImg from '../assets/placeholder.png';
 
 const MessagesContext = createContext();
 
@@ -31,16 +32,15 @@ export const MessagesProvider = ({ children }) => {
   };
   const loadMessages = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const incidents = await getAllIncidents();
       const normalized = incidents.map(inc => ({
         ...inc,
-        active: inc.active === true || inc.active === 't' || inc.active === 'true',
+        // Если поля active нет (undefined), считаем его true (активным)
+        active: inc.active === undefined ? true : (inc.active === true || inc.active === 't' || inc.active === 'true'),
+        preview: inc.photos?.[0] || placeholderImg
       }));
       setMessages(normalized);
-      //console.log('Incidents from server:', incidents);
-      //setMessages(incidents);
     } catch (err) {
       console.error('Ошибка загрузки инцидентов:', err);
       setError(err.message);
@@ -49,20 +49,41 @@ export const MessagesProvider = ({ children }) => {
     }
   }, []);
 
-  const addMessage = async (messageData) => {
+  const addMessage = async (messageData, photoFiles = []) => {
     try {
+      // 1. Создаем запись об инциденте
       const newIncident = await createIncident(messageData);
-      await loadMessages(); // обновляем список после создания
-      return newIncident.id;
+      const incidentId = newIncident.id;
+
+      // 2. Если есть выбранные фото, загружаем их
+      if (photoFiles.length > 0) {
+        // Загружаем параллельно все файлы
+        await Promise.all(
+          photoFiles.map(photo => uploadIncidentPhoto(incidentId, photo.file))
+        );
+      }
+
+      await loadMessages(); // Обновляем список
+      return incidentId;
     } catch (err) {
-      console.error('Ошибка создания инцидента:', err);
+      console.error('Ошибка при создании инцидента с фото:', err);
       throw err;
     }
   };
 
   const getMessage = async (id) => {
     try {
-      return await getIncidentById(id);
+      // Получаем данные инцидента и список фото одновременно
+      const [incident, photosData] = await Promise.all([
+        getIncidentById(id),
+        getIncidentPhotos(id)
+      ]);
+
+      return {
+        ...incident,
+        // Собираем массив URL из объектов MediaAssetDto
+        photos: photosData.map(asset => asset.downloadUrl)
+      };
     } catch (err) {
       console.error(`Ошибка получения инцидента ${id}:`, err);
       throw err;

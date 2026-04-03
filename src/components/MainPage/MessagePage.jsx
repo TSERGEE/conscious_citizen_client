@@ -10,7 +10,7 @@ const MessagePage = () => {
   const { getMessage, addMessage } = useMessages();
   const [message, setMessage] = useState(null);
   const [saving, setSaving] = useState(false);
-
+  
   useEffect(() => {
     const fetchMessage = async () => {
       try {
@@ -26,7 +26,7 @@ const MessagePage = () => {
   }, [id, navigate, getMessage]);
 
   const handleSaveAsDraft = async () => {
-    if (!message) return;
+    if (!message) return <div>Загрузка...</div>;
     setSaving(true);
     try {
       // Создаём новый черновик на основе текущего сообщения
@@ -66,8 +66,16 @@ const MessagePage = () => {
           <label>Фото</label>
           {photos.length > 0 ? (
             <div className="photo-gallery">
-              {photos.map((photo, idx) => (
-                <img key={idx} src={photo} alt={`фото ${idx + 1}`} className="gallery-photo" />
+              {photos.map((photoUrl, idx) => (
+                <img 
+                  key={idx} 
+                  // Если используете прокси, photoUrl подхватится сам. 
+                  // Если нет — добавьте адрес сервера
+                  src={photoUrl} 
+                  alt={`Событие ${idx + 1}`} 
+                  className="gallery-photo"
+                  onError={(e) => { e.target.src = placeholderImg; }} // Если фото не загрузилось
+                />
               ))}
             </div>
           ) : (

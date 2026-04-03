@@ -194,3 +194,41 @@ export const getDraftIncidents = async () => {
 
   return response.json();
 };
+
+// Функция для загрузки ОДНОЙ фотографии
+export const uploadIncidentPhoto = async (incidentId, file) => {
+  const token = localStorage.getItem("accessToken");
+  const userId = localStorage.getItem("userId");
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${BASE_URL}/api/incidents/${incidentId}/photos`, {
+    method: 'POST',
+    headers: {
+      // Важно: для FormData Content-Type не ставим вручную, браузер сделает это сам
+      'X-User-Id': userId,
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    await handleError(response);
+  }
+
+  return response.json();
+};
+
+// Функция для получения списка фотографий инцидента
+export const getIncidentPhotos = async (incidentId) => {
+  const response = await fetch(`${BASE_URL}/api/incidents/${incidentId}/photos`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    await handleError(response);
+  }
+
+  return response.json();
+};

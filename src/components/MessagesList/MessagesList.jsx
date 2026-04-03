@@ -7,7 +7,7 @@ const MessagesList = ({ messages, isDraftList = false }) => {
 
   const handleMessageClick = (id) => {
     if (isDraftList) {
-      navigate(`/edit-draft/${id}`);
+      navigate(`/message/${id}`);
     } else {
       navigate(`/message/${id}`);
     }

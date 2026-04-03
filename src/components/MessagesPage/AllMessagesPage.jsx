@@ -6,10 +6,13 @@ import './MessagesPage.css';
 const AllMessagesPage = () => {
   const { messages } = useMessages();
 
+  // Все опубликованные
+  const activeMessages = messages.filter(msg => msg.active !== true);
+
   return (
     <div className="messages-page">
       <h1 className="page-title">Все сообщения</h1>
-      <MessagesList messages={messages} />
+      <MessagesList messages={activeMessages} />
     </div>
   );
 };

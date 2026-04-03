@@ -89,6 +89,7 @@ const CreateMessagePage = () => {
 
     setIsSubmitting(true);
     try {
+      // ПЕРЕДАЕМ photos вторым аргументом
       const newId = await addMessage({
         title: topic,
         description,
@@ -96,8 +97,9 @@ const CreateMessagePage = () => {
         address,
         latitude: lat,
         longitude: lng,
-        active: true, // опубликовано
-      });
+        active: true,
+      }, photos); 
+      
       navigate(`/message/${newId}`);
     } catch (err) {
       alert('Ошибка при публикации: ' + err.message);
@@ -116,18 +118,20 @@ const CreateMessagePage = () => {
 
     setIsSubmitting(true);
     try {
-      await addMessage({
+      // ПЕРЕДАЕМ photos вторым аргументом
+      const newId = await addMessage({
         title: topic,
         description,
         type: category,
         address,
         latitude: lat,
         longitude: lng,
-        active: false, // черновик
-      });
-      navigate('/drafts'); // страница со списком черновиков
+        active: false,
+      }, photos); 
+      
+      navigate(`/drafts`);
     } catch (err) {
-      alert('Ошибка при сохранении черновика: ' + err.message);
+      alert('Ошибка при публикации: ' + err.message);
     } finally {
       setIsSubmitting(false);
     }

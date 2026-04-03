@@ -143,3 +143,31 @@
   color: var(--text-light);
   font-size: 13px;
 }
+.message-type.parking {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.message-type.expired, 
+.message-type.food_expired { /* Добавили этот селектор */
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+/* Темная тема */
+[data-theme="dark"] .message-type.parking {
+  background: #1e3a5f;
+  color: #90caf9;
+}
+
+[data-theme="dark"] .message-type.expired,
+[data-theme="dark"] .message-type.food_expired {
+  background: #4a1e2c;
+  color: #ef9a9a;
+}
+
+/* Подсветка активной кнопки фильтра */
+.filter-buttons button.active {
+  background: var(--accent) !important;
+  color: white !important;
+}

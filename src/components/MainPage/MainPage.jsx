@@ -366,7 +366,7 @@ const MainPage = () => {
             (msg) =>
               msg.latitude != null &&
               msg.longitude != null &&
-              msg.active !== true
+              msg.active === true
           )
           .map((msg) => (
             <Marker

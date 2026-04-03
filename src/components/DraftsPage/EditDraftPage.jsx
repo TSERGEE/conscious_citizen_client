@@ -10,27 +10,29 @@ const EditDraftPage = () => {
   const { getMessage, updateMessage } = useMessages();
   const draft = getMessage(Number(id));
 
-  // Состояния
+  // Состояния формы
   const [topic, setTopic] = useState('');
   const [description, setDescription] = useState('');
-  const [photos, setPhotos] = useState([]); // массив { id, file, previewUrl }
-  const [type, setType] = useState('');     // категория
+  const [photos, setPhotos] = useState([]); // { id, file, previewUrl }
+  const [category, setCategory] = useState('');
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const fileInputRef = useRef(null);
   const pendingActionRef = useRef('add');
 
   // Инициализация из черновика
   useEffect(() => {
     if (draft) {
-      setTopic(draft.topic || '');
+      setTopic(draft.topic || draft.title || '');
       setDescription(draft.description || '');
-      setType(draft.type || '');
+      setCategory(draft.type || '');
 
-      // Преобразуем существующие фото в формат { id, previewUrl }
+      // Преобразуем существующие фото в формат компонента
       const existingPhotos = (draft.photos || []).map((url, idx) => ({
         id: Date.now() + idx,
-        file: null,
-        previewUrl: url,
+        file: null,             // существующие фото не имеют File объекта
+        previewUrl: url,        // это может быть data URL или URL с сервера
       }));
       setPhotos(existingPhotos);
     }
@@ -44,17 +46,18 @@ const EditDraftPage = () => {
     }
   }, [draft, navigate]);
 
-  // Функции для работы с фото (аналогично CreateMessagePage)
+  // ----- Функции работы с фото (полностью как в CreateMessagePage) -----
   const addFiles = (newFiles) => {
     const newPhotos = newFiles.map((file, index) => ({
       id: Date.now() + index,
       file,
-      previewUrl: URL.createObjectURL(file),
+      previewUrl: URL.createObjectURL(file), // временный blob URL
     }));
     setPhotos(prev => [...prev, ...newPhotos]);
   };
 
   const replaceFiles = (newFiles) => {
+    // Освобождаем ресурсы старых blob URL (только для новых фото, у которых есть file)
     photos.forEach(photo => {
       if (photo.file) URL.revokeObjectURL(photo.previewUrl);
     });
@@ -98,15 +101,38 @@ const EditDraftPage = () => {
     });
   };
 
+  // Преобразование новых файлов в постоянные data URL для сохранения
+  const getPhotoUrls = async () => {
+    const urls = [];
+    for (const photo of photos) {
+      if (photo.file) {
+        // Новый файл – читаем как data URL
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(photo.file);
+        });
+        urls.push(dataUrl);
+      } else {
+        // Существующее фото – используем его previewUrl (data URL или URL с сервера)
+        urls.push(photo.previewUrl);
+      }
+    }
+    if (urls.length === 0) urls.push(placeholderImg);
+    return urls;
+  };
+
+  // Валидация
   const validateForm = () => {
     const newErrors = {};
     if (!topic.trim()) newErrors.topic = 'Укажите тему сообщения';
     if (!description.trim()) newErrors.description = 'Опишите проблему';
-    if (!type) newErrors.type = 'Выберите рубрику';
+    if (!category) newErrors.category = 'Выберите рубрику';
     return newErrors;
   };
 
-  const handlePublish = (e) => {
+  // Публикация (черновик -> активное сообщение)
+  const handlePublish = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -114,23 +140,28 @@ const EditDraftPage = () => {
       return;
     }
 
-    const photoUrls = photos.map(photo => photo.previewUrl);
-    if (photoUrls.length === 0) photoUrls.push(placeholderImg);
-
-    const updatedMessage = {
-      ...draft,
-      topic,
-      description,
-      type,
-      photos: photoUrls,
-      isDraft: false,
-    };
-
-    updateMessage(draft.id, updatedMessage);
-    navigate(`/message/${draft.id}`);
+    setIsSubmitting(true);
+    try {
+      const photoUrls = await getPhotoUrls();
+      const updatedMessage = {
+        ...draft,
+        topic,
+        description,
+        type: category,
+        photos: photoUrls,
+        isDraft: false,      // теперь это не черновик
+      };
+      updateMessage(draft.id, updatedMessage);
+      navigate(`/message/${draft.id}`);
+    } catch (err) {
+      alert('Ошибка при публикации: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleSaveDraft = (e) => {
+  // Сохранить как черновик (обновить существующий)
+  const handleSaveDraft = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -138,20 +169,24 @@ const EditDraftPage = () => {
       return;
     }
 
-    const photoUrls = photos.map(photo => photo.previewUrl);
-    if (photoUrls.length === 0) photoUrls.push(placeholderImg);
-
-    const updatedMessage = {
-      ...draft,
-      topic,
-      description,
-      type,
-      photos: photoUrls,
-      isDraft: true,
-    };
-
-    updateMessage(draft.id, updatedMessage);
-    navigate('/drafts');
+    setIsSubmitting(true);
+    try {
+      const photoUrls = await getPhotoUrls();
+      const updatedMessage = {
+        ...draft,
+        topic,
+        description,
+        type: category,
+        photos: photoUrls,
+        isDraft: true,
+      };
+      updateMessage(draft.id, updatedMessage);
+      navigate('/drafts');
+    } catch (err) {
+      alert('Ошибка при сохранении черновика: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!draft) return null;
@@ -159,7 +194,9 @@ const EditDraftPage = () => {
   return (
     <div className="create-message-page">
       <h1 className="page-title">Редактирование черновика</h1>
+
       <form onSubmit={handlePublish} className="create-message-form">
+        {/* Тема */}
         <div className="form-group">
           <label htmlFor="topic">Тема сообщения</label>
           <input
@@ -172,6 +209,7 @@ const EditDraftPage = () => {
           {errors.topic && <span className="error-message">{errors.topic}</span>}
         </div>
 
+        {/* Описание */}
         <div className="form-group">
           <label htmlFor="description">Текст сообщения</label>
           <textarea
@@ -184,6 +222,7 @@ const EditDraftPage = () => {
           {errors.description && <span className="error-message">{errors.description}</span>}
         </div>
 
+        {/* Фото – полностью как в CreateMessagePage */}
         <div className="form-group">
           <label>Фото</label>
           <div className="photo-upload">
@@ -221,42 +260,47 @@ const EditDraftPage = () => {
           )}
         </div>
 
+        {/* Адрес (только для чтения) */}
         <div className="form-group">
           <label>Адрес</label>
           <div className="address-display">{draft.address}</div>
         </div>
 
+        {/* Рубрика */}
         <div className="form-group">
           <label>Рубрика</label>
           <div className="radio-group">
             <label className="radio-label">
               <input
                 type="radio"
-                name="type"
+                name="category"
                 value="parking"
-                checked={type === 'parking'}
-                onChange={(e) => setType(e.target.value)}
+                checked={category === 'parking'}
+                onChange={(e) => setCategory(e.target.value)}
               />
               Парковка
             </label>
             <label className="radio-label">
               <input
                 type="radio"
-                name="type"
+                name="category"
                 value="expired"
-                checked={type === 'expired'}
-                onChange={(e) => setType(e.target.value)}
+                checked={category === 'expired'}
+                onChange={(e) => setCategory(e.target.value)}
               />
               Просроченные продукты
             </label>
           </div>
-          {errors.type && <span className="error-message">{errors.type}</span>}
+          {errors.category && <span className="error-message">{errors.category}</span>}
         </div>
 
+        {/* Кнопки действий */}
         <div className="form-actions">
-          <button type="submit" className="submit-btn">Опубликовать</button>
-          <button type="button" onClick={handleSaveDraft} className="submit-btn">
-            Сохранить черновик
+          <button type="submit" className="submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? 'Публикация...' : 'Опубликовать'}
+          </button>
+          <button type="button" onClick={handleSaveDraft} className="submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? 'Сохранение...' : 'Сохранить черновик'}
           </button>
         </div>
       </form>

@@ -16,8 +16,10 @@ const LeftPanel = () => {
   const filteredMessages = messages.filter(msg => {
     if (filter === 'drafts') return msg.active === false;
     if (filter === 'PARKING') return msg.type === 'PARKING' && msg.active === true;
-    if (filter === 'FOOD_EXPIRED') return msg.type === 'FOOD_EXPIRED' && msg.active === true;
-    return msg.active === false; // 'all' – только активные
+    if (filter === 'FOOD_EXPIRED') return (msg.type === 'FOOD_EXPIRED' || msg.type === 'EXPIRED') && msg.active === true;
+    
+    // Для 'all' возвращаем только активные
+    return msg.active === true; 
   });
 
   const sortedMessages = [...filteredMessages].sort((a, b) => {
@@ -39,10 +41,22 @@ const LeftPanel = () => {
       </div>
 
       <div className="filter-buttons">
-        <button onClick={() => setFilter('all')}>Все</button>
-        <button onClick={() => setFilter('PARKING')}>Парковка</button>
-        <button onClick={() => setFilter('FOOD_EXPIRED')}>Продукты</button>
-        <button onClick={() => setFilter('drafts')}>Черновики</button>
+        <button 
+          className={filter === 'all' ? 'active' : ''} 
+          onClick={() => setFilter('all')}
+        >Все</button>
+        <button 
+          className={filter === 'PARKING' ? 'active' : ''} 
+          onClick={() => setFilter('PARKING')}
+        >Парковка</button>
+        <button 
+          className={filter === 'FOOD_EXPIRED' ? 'active' : ''} 
+          onClick={() => setFilter('FOOD_EXPIRED')}
+        >Продукты</button>
+        <button 
+          className={filter === 'drafts' ? 'active' : ''} 
+          onClick={() => setFilter('drafts')}
+        >Черновики</button>
       </div>
 
       <div className="category-messages">
@@ -51,13 +65,27 @@ const LeftPanel = () => {
         ) : sortedMessages.length > 0 ? (
           sortedMessages.map(msg => (
             <div key={msg.id} className="message-item" onClick={() => handleMessageClick(msg.id)}>
-              <img src={msg.photos?.[0] || placeholderImg} alt="preview" className="message-thumb" />
+              <img 
+                  src={msg.preview || placeholderImg} 
+                  alt="preview" 
+                  className="message-thumb" 
+                />
               <div className="message-info">
                 <div className="message-topic">{msg.title}</div>
                 <div className="message-date">
-                  {msg.created ? new Date(msg.created).toLocaleDateString() : '—'}
+                  {msg.created ? (
+                    <>
+                      {new Date(msg.created).toLocaleDateString()} в {new Date(msg.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </>
+                  ) : '—'}
                 </div>
-                <div className={`message-type ${!msg.active ? 'draft' : msg.type}`}>
+                
+                {/* Исправлено: приводим тип к нижнему регистру и обрабатываем FOOD_EXPIRED */}
+                <div className={`message-type ${
+                  !msg.active 
+                    ? 'draft' 
+                    : msg.type === 'FOOD_EXPIRED' ? 'expired' : msg.type?.toLowerCase()
+                }`}>
                   {!msg.active
                     ? 'Черновик'
                     : msg.type === 'PARKING'
