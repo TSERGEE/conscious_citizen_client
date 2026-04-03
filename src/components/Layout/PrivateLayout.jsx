@@ -11,8 +11,10 @@ const PrivateLayout = ({ children }) => {
 
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { messages } = useMessages();
-
+  const { messages, readNotifications, markAllAsRead } = useMessages();
+  const unreadCount = messages.filter(
+    msg => !readNotifications.includes(msg.id)
+  ).length;
   const profileRef = useRef();
   const notifRef = useRef();
 
@@ -35,7 +37,6 @@ const PrivateLayout = ({ children }) => {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const notificationCount = messages.length;
 
   const handleNav = (path) => {
     navigate(path);
@@ -59,14 +60,22 @@ const PrivateLayout = ({ children }) => {
             <div
               className="notification-btn"
               onClick={() => {
-                setNotifOpen(prev => !prev);
+                setNotifOpen(prev => {
+                  const next = !prev;
+
+                  if (next) {
+                    markAllAsRead();
+                  }
+
+                  return next;
+                });
                 setProfileOpen(false);
               }}
             >
               <img src="/images/bell.png" alt="notifications" />
-              {notificationCount > 0 && (
+              {unreadCount > 0 && (
                 <span className="notification-badge">
-                  {notificationCount}
+                  {unreadCount}
                 </span>
               )}
             </div>
@@ -79,7 +88,7 @@ const PrivateLayout = ({ children }) => {
                   <div
                     key={msg.id}
                     className="notif-item"
-                    onClick={() => handleNav(`/messages/${msg.id}`)}
+                    onClick={() => handleNav(`/message/${msg.id}`)}
                   >
                     <div className="notif-title">Новое сообщение</div>
                     <div className="notif-text">

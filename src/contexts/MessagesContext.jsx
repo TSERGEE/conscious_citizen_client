@@ -10,7 +10,25 @@ export const MessagesProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [readNotifications, setReadNotifications] = useState(() => {
+    const saved = localStorage.getItem('readNotifications');
+    return saved ? JSON.parse(saved) : [];
+  });
+  useEffect(() => {
+    localStorage.setItem(
+      'readNotifications',
+      JSON.stringify(readNotifications)
+    );
+  }, [readNotifications]);
+  const markAsRead = (id) => {
+    setReadNotifications(prev =>
+      prev.includes(id) ? prev : [...prev, id]
+    );
+  };
 
+  const markAllAsRead = () => {
+    setReadNotifications(messages.map(m => m.id));
+  };
   const loadMessages = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -64,6 +82,9 @@ export const MessagesProvider = ({ children }) => {
         addMessage,
         getMessage,
         refreshMessages: loadMessages,
+        readNotifications,
+        markAsRead,
+        markAllAsRead,
       }}
     >
       {children}

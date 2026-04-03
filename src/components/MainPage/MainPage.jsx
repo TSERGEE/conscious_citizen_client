@@ -332,7 +332,7 @@ const MainPage = () => {
       </button>
     </div>
   );
-
+  console.log('MESSAGES MAP:', messages);
   return (
     <div className="main-page">
       {searchRoot && ReactDOM.createPortal(headerContent, searchRoot)}
@@ -362,7 +362,12 @@ const MainPage = () => {
         )}
 
         {messages
-          .filter((msg) => msg.latitude && msg.longitude && msg.active !== false) // отображаем активные (active=true)
+          .filter(
+            (msg) =>
+              msg.latitude != null &&
+              msg.longitude != null &&
+              msg.active !== true
+          )
           .map((msg) => (
             <Marker
               key={msg.id}
@@ -373,7 +378,9 @@ const MainPage = () => {
                 <div className="message-popup">
                   <strong>{msg.title}</strong>
                   <p>{msg.address}</p>
-                  <button onClick={() => navigate(`/message/${msg.id}`)}>Подробнее</button>
+                  <button onClick={() => navigate(`/message/${msg.id}`)}>
+                    Подробнее
+                  </button>
                 </div>
               </Popup>
             </Marker>
