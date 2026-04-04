@@ -27,13 +27,16 @@ const MessagesList = ({ messages, isDraftList = false }) => {
         >
           <div className="message-card-header">
             <span className={`category-badge ${msg.type}`}>
-              {msg.type === 'parking' ? 'Парковка' : 'Просроченные продукты'}
+              {msg.type === 'PARKING' ? 'Парковка' : 'Просроченные продукты'}
             </span>
             <span className="message-date">
-              {new Date(msg.createdAt).toLocaleDateString()}
+              {/* Универсальная проверка даты */}
+              {(msg.created || msg.createdAt) 
+                ? new Date(msg.created || msg.createdAt).toLocaleDateString() 
+                : '—'}
             </span>
           </div>
-          <h3 className="message-topic">{msg.topic}</h3>
+          <h3 className="message-topic">{msg.title || msg.topic}</h3> 
           <p className="message-address">{msg.address}</p>
           {msg.photos && msg.photos.length > 0 && (
             <div className="message-photos">

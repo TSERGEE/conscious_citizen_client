@@ -1,6 +1,6 @@
 // contexts/MessagesContext.js
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
-import { getAllIncidents, createIncident, getIncidentById, uploadIncidentPhoto,  getIncidentPhotos } from '../api';
+import { getAllIncidents, createIncident, getIncidentById, uploadIncidentPhoto,  getIncidentPhotos, getDraftIncidents } from '../api';
 import placeholderImg from '../assets/placeholder.png';
 
 const MessagesContext = createContext();
@@ -33,26 +33,30 @@ export const MessagesProvider = ({ children }) => {
   const loadMessages = useCallback(async () => {
     setLoading(true);
     try {
-      // Загружаем активные и черновики параллельно
-      const [publicIncidents, drafts] = await Promise.all([
-        getAllIncidents(),
-        getDraftIncidents()
+      // Делаем два запроса одновременно
+      const [publicIncidents, draftIncidents] = await Promise.all([
+        getAllIncidents(),     // Тот, что без параметра, но мы знаем, что они active
+        getDraftIncidents()    // Тот, что без параметра, но мы знаем, что это черновики
       ]);
 
+      // Руками добавляем поле active для первой группы
       const normalPublic = publicIncidents.map(inc => ({
         ...inc,
-        active: true,
+        active: true, 
         preview: inc.photos?.[0] || placeholderImg
       }));
 
-      const normalDrafts = drafts.map(inc => ({
+      // Руками добавляем поле active для второй группы
+      const normalDrafts = draftIncidents.map(inc => ({
         ...inc,
         active: false,
         preview: inc.photos?.[0] || placeholderImg
       }));
 
+      // Соединяем в один массив
       setMessages([...normalPublic, ...normalDrafts]);
     } catch (err) {
+      console.error('Ошибка загрузки:', err);
       setError(err.message);
     } finally {
       setLoading(false);

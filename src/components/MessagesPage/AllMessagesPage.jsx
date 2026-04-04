@@ -7,7 +7,7 @@ const AllMessagesPage = () => {
   const { messages } = useMessages();
 
   // Все опубликованные
-  const activeMessages = messages.filter(msg => msg.active !== true);
+  const activeMessages = messages.filter(msg => msg.active === true);
 
   return (
     <div className="messages-page">

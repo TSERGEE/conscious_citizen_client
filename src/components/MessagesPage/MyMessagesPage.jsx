@@ -7,7 +7,7 @@ const MyMessagesPage = () => {
   const { messages } = useMessages();
   const userId = Number(localStorage.getItem('userId')); // текущий пользователь
 
-  const myMessages = messages.filter(msg => msg.userId === userId && msg.active !== true);
+  const myMessages = messages.filter(msg => msg.userId === userId && msg.active === true);
 
 
   return (

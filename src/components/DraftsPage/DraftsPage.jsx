@@ -1,24 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { getDraftIncidents } from '../../api';
+import { getDraftIncidents } from '../../api'; // Проверь название в api.js
 import MessagesList from '../MessagesList/MessagesList';
+import placeholderImg from '../../assets/placeholder.png'; // Добавь импорт
 import './MessagesPage.css';
 
 const DraftsPage = () => {
   const [drafts, setDrafts] = useState([]);
-  const userId = Number(localStorage.getItem('userId'));
 
   useEffect(() => {
     const fetchDrafts = async () => {
       try {
-        // Сервер уже отфильтровал черновики по X-User-Id, 
-        // который добавился в getAuthHeaders() внутри api.js
-        const myDrafts = await getDraft_Incidents(); 
+        // 1. Исправлено название функции (убрали нижнее подчеркивание)
+        const myDrafts = await getDraftIncidents(); 
         
-        // Добавляем нормализацию, как в контексте (чтобы были превью и флаг active)
+        // 2. Нормализация данных
         const normalizedDrafts = myDrafts.map(d => ({
           ...d,
-          active: false, // Мы точно знаем, что это черновики
-          preview: placeholderImg // Или логика получения первого фото, если они есть
+          active: false,
+          // Гарантируем наличие полей для MessagesList
+          title: d.title || d.topic, 
+          created: d.created || d.createdAt,
+          preview: d.photos?.[0] || placeholderImg 
         }));
 
         setDrafts(normalizedDrafts);
@@ -27,7 +29,7 @@ const DraftsPage = () => {
       }
     };
     fetchDrafts();
-  }, []); // userId убираем из зависимостей, если он берется из localStorage внутри API
+  }, []); 
 
   return (
     <div className="messages-page">
@@ -36,5 +38,3 @@ const DraftsPage = () => {
     </div>
   );
 };
-
-export default DraftsPage;
