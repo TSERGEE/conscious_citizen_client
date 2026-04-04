@@ -37,7 +37,7 @@ const LeftPanel = () => {
   return (
     <div className="message-feed-panel">
       <div className="feed-header">
-        <h3>Мои сообщения</h3>
+        <h3>Cообщения</h3>
       </div>
 
       <div className="filter-buttons">

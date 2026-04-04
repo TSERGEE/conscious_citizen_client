@@ -26,10 +26,14 @@ const MessagePage = () => {
   }, [id, navigate, getMessage]);
 
   const handleSaveAsDraft = async () => {
-    if (!message) return <div>Загрузка...</div>;
+    if (!message) return; // Просто выходим, если данных нет
     setSaving(true);
     try {
-      // Создаём новый черновик на основе текущего сообщения
+      // ВАЖНО: Если мы хотим сохранить черновик с теми же фото, 
+      // нам нужно передать ФАЙЛЫ. Но так как у нас только ссылки, 
+      // черновик создастся БЕЗ фото. 
+      // Если на бэкенде нет метода "копировать", фото пропадут.
+      
       await addMessage({
         title: message.title,
         description: message.description,
@@ -38,11 +42,12 @@ const MessagePage = () => {
         latitude: message.latitude,
         longitude: message.longitude,
         active: false,
-      });
-      alert('Черновик сохранён');
-      navigate('/drafts'); // переходим в список черновиков
+      }, []); // Передаем пустой массив, т.к. старые фото-ссылки загрузить нельзя
+
+      alert('Черновик успешно создан на основе этого сообщения');
+      navigate('/drafts');
     } catch (err) {
-      alert('Ошибка при сохранении черновика: ' + err.message);
+      alert('Ошибка при сохранении: ' + err.message);
     } finally {
       setSaving(false);
     }

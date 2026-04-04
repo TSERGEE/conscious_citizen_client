@@ -33,16 +33,26 @@ export const MessagesProvider = ({ children }) => {
   const loadMessages = useCallback(async () => {
     setLoading(true);
     try {
-      const incidents = await getAllIncidents();
-      const normalized = incidents.map(inc => ({
+      // Загружаем активные и черновики параллельно
+      const [publicIncidents, drafts] = await Promise.all([
+        getAllIncidents(),
+        getDraftIncidents()
+      ]);
+
+      const normalPublic = publicIncidents.map(inc => ({
         ...inc,
-        // Если поля active нет (undefined), считаем его true (активным)
-        active: inc.active === undefined ? true : (inc.active === true || inc.active === 't' || inc.active === 'true'),
+        active: true,
         preview: inc.photos?.[0] || placeholderImg
       }));
-      setMessages(normalized);
+
+      const normalDrafts = drafts.map(inc => ({
+        ...inc,
+        active: false,
+        preview: inc.photos?.[0] || placeholderImg
+      }));
+
+      setMessages([...normalPublic, ...normalDrafts]);
     } catch (err) {
-      console.error('Ошибка загрузки инцидентов:', err);
       setError(err.message);
     } finally {
       setLoading(false);
