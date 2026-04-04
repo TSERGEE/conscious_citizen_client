@@ -38,3 +38,5 @@ const DraftsPage = () => {
     </div>
   );
 };
+
+export default DraftsPage;
