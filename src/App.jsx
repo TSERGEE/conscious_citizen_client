@@ -39,6 +39,7 @@ function App() {
             <Route path="/profile" element={<PrivateLayout><Profile /></PrivateLayout>} />
             <Route path="/profile/edit" element={<PrivateLayout><ProfileEdit /></PrivateLayout>} />
             <Route path="/create-message" element={<PrivateLayout><CreateMessagePage /></PrivateLayout>} />
+            <Route path="/create-message/:id" element={<PrivateLayout><CreateMessagePage /></PrivateLayout>} />
             <Route path="/message/:id" element={<PrivateLayout><MessagePage /></PrivateLayout>} />
             <Route path="/my-messages" element={<PrivateLayout><MyMessagesPage /></PrivateLayout>} />
             <Route path="/all-messages" element={<PrivateLayout><AllMessagesPage /></PrivateLayout>} />
