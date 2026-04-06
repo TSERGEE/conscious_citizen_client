@@ -281,3 +281,10 @@ export const updateIncident = async (incidentId, incidentData) => {
   if (!response.ok) await handleError(response);
   return response.json();
 };
+export const getAllUsers = async () => {
+  const response = await fetch(`${BASE_URL}/users`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) await handleError(response);
+  return response.json();
+};

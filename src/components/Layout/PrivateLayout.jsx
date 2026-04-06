@@ -134,9 +134,10 @@ const PrivateLayout = ({ children }) => {
 
             <div className={`dropdown-menu ${profileOpen ? 'open' : ''}`}>
               <button onClick={() => handleNav('/profile')}>Профиль</button>
-              <button onClick={() => handleNav('/my-messages')}>Мои сообщения</button>
+              {/*<button onClick={() => handleNav('/my-messages')}>Мои сообщения</button>
               <button onClick={() => handleNav('/all-messages')}>Все сообщения</button>
-              <button onClick={() => handleNav('/drafts')}>Черновики</button>
+              <button onClick={() => handleNav('/drafts')}>Черновики</button>*/}
+              <button onClick={() => handleNav('/unified')}>Cообщения</button>
               <button onClick={() => handleNav('/notifications')}>Уведомления</button>
 
               <hr />

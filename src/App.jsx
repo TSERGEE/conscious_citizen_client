@@ -21,6 +21,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import AboutProject from './components/AboutProject/AboutProject';
 import Notifications from './components/Notifications/Notifications';
 import EditMessagePage from './components/MainPage/EditMessagePage';
+import UnifiedMessagesPage from './components/MessagesPage/UnifiedMessagesPage';
 import './styles/theme.css';
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
             <Route path="/about" element={<PrivateLayout><AboutProject /></PrivateLayout>} />
             <Route path="/notifications" element={<PrivateLayout><Notifications /></PrivateLayout>} />
             <Route path="/edit/:id" element={<PrivateLayout><EditMessagePage /></PrivateLayout>} />
+            <Route path="/unified" element={<PrivateLayout><UnifiedMessagesPage /></PrivateLayout>} />
           </Routes>
         </MessagesProvider>
       </ThemeProvider>

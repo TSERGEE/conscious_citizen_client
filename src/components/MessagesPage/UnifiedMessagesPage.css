@@ -1,0 +1,126 @@
+/* Основной контейнер – как в админке */
+.unified-view {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+}
+
+/* Левая панель */
+.unified-view .unified-sidebar {
+  width: 280px;
+  background-color: var(--bg-card);
+  border-right: 1px solid var(--border-light);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.unified-view .side-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 800;
+  font-size: 1.2rem;
+  margin-bottom: 40px;
+}
+
+.unified-view .brand-logo {
+  width: 35px;
+  height: 35px;
+  background: var(--accent);
+  color: white;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.unified-view .side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.unified-view .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-weight: 500;
+  text-align: left;
+  width: 100%;
+}
+
+.unified-view .nav-link:hover {
+  background-color: var(--bg-secondary);
+  color: var(--accent);
+}
+
+.unified-view .nav-link.active {
+  background-color: var(--accent-light);
+  color: var(--accent);
+}
+
+/* Основная область */
+.unified-view .unified-main {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
+}
+
+.unified-view .body-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.unified-view .header-info h1 {
+  font-size: 1.8rem;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.unified-view .header-info p {
+  color: var(--text-light);
+  margin: 4px 0 0;
+}
+
+.unified-view .body-content {
+  max-width: 1100px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .unified-view {
+    flex-direction: column;
+  }
+  .unified-sidebar {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 12px;
+  }
+  .side-brand {
+    display: none;
+  }
+  .side-nav {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+  }
+  .nav-link {
+    justify-content: center;
+  }
+  .unified-main {
+    padding: 20px;
+  }
+}
