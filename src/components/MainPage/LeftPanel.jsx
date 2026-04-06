@@ -1,24 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
-import placeholderImg from '../../assets/placeholder.png';
+import SecureImage from '../SecureImage/SecureImage'; // 1. ДОБАВЛЯЕМ ИМПОРТ
 import './LeftPanel.css';
 
 const LeftPanel = () => {
   const navigate = useNavigate();
-  const { messages, loading, refreshMessages } = useMessages();
+  const { messages, loading, refreshMessages, loadThumbnail } = useMessages();
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     refreshMessages();
   }, [refreshMessages]);
+  // Подгружаем миниатюры для всех отображаемых сообщений
+  useEffect(() => {
+    const visibleMessages = messages.filter(msg => {
+      if (filter === 'drafts') return msg.active === false;
+      if (filter === 'PARKING') return msg.type === 'PARKING' && msg.active === true;
+      if (filter === 'FOOD_EXPIRED') return (msg.type === 'FOOD_EXPIRED' || msg.type === 'EXPIRED') && msg.active === true;
+      return msg.active === true;
+    });
+    visibleMessages.forEach(msg => {
+      loadThumbnail(msg.id);
+    });
+  }, [messages, filter, loadThumbnail]);
 
   const filteredMessages = messages.filter(msg => {
     if (filter === 'drafts') return msg.active === false;
     if (filter === 'PARKING') return msg.type === 'PARKING' && msg.active === true;
     if (filter === 'FOOD_EXPIRED') return (msg.type === 'FOOD_EXPIRED' || msg.type === 'EXPIRED') && msg.active === true;
-    
-    // Для 'all' возвращаем только активные
     return msg.active === true; 
   });
 
@@ -27,9 +37,7 @@ const LeftPanel = () => {
     const dateB = b.created ? new Date(b.created) : new Date(0);
     return dateB - dateA;
   });
-  console.log('Messages in LeftPanel:', messages);
-  console.log('Filtered for all:', messages.filter(msg => msg.active === true));
-  console.log('Filtered for drafts:', messages.filter(msg => msg.active === false));
+
   const handleMessageClick = (id) => {
     navigate(`/message/${id}`);
   };
@@ -41,22 +49,11 @@ const LeftPanel = () => {
       </div>
 
       <div className="filter-buttons">
-        <button 
-          className={filter === 'all' ? 'active' : ''} 
-          onClick={() => setFilter('all')}
-        >Все</button>
-        <button 
-          className={filter === 'PARKING' ? 'active' : ''} 
-          onClick={() => setFilter('PARKING')}
-        >Парковка</button>
-        <button 
-          className={filter === 'FOOD_EXPIRED' ? 'active' : ''} 
-          onClick={() => setFilter('FOOD_EXPIRED')}
-        >Продукты</button>
-        <button 
-          className={filter === 'drafts' ? 'active' : ''} 
-          onClick={() => setFilter('drafts')}
-        >Черновики</button>
+        {/* Кнопки фильтров остаются без изменений */}
+        <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>Все</button>
+        <button className={filter === 'PARKING' ? 'active' : ''} onClick={() => setFilter('PARKING')}>Парковка</button>
+        <button className={filter === 'FOOD_EXPIRED' ? 'active' : ''} onClick={() => setFilter('FOOD_EXPIRED')}>Продукты</button>
+        <button className={filter === 'drafts' ? 'active' : ''} onClick={() => setFilter('drafts')}>Черновики</button>
       </div>
 
       <div className="category-messages">
@@ -65,11 +62,14 @@ const LeftPanel = () => {
         ) : sortedMessages.length > 0 ? (
           sortedMessages.map(msg => (
             <div key={msg.id} className="message-item" onClick={() => handleMessageClick(msg.id)}>
-              <img 
-                  src={msg.preview || placeholderImg} 
-                  alt="preview" 
-                  className="message-thumb" 
-                />
+              
+              {/* 2. ЗАМЕНЯЕМ ОБЫЧНЫЙ <img> НА SecureImage */}
+              <SecureImage 
+                src={msg.preview} 
+                alt="preview" 
+                className="message-thumb" 
+              />
+
               <div className="message-info">
                 <div className="message-topic">{msg.title}</div>
                 <div className="message-date">
@@ -80,7 +80,6 @@ const LeftPanel = () => {
                   ) : '—'}
                 </div>
                 
-                {/* Исправлено: приводим тип к нижнему регистру и обрабатываем FOOD_EXPIRED */}
                 <div className={`message-type ${
                   !msg.active 
                     ? 'draft' 

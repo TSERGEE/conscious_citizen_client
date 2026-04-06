@@ -20,6 +20,7 @@ import AdminPanel from './components/MainPage/AdminPanel';
 import { ThemeProvider } from './contexts/ThemeContext';
 import AboutProject from './components/AboutProject/AboutProject';
 import Notifications from './components/Notifications/Notifications';
+import EditMessagePage from './components/MainPage/EditMessagePage';
 import './styles/theme.css';
 
 function App() {
@@ -48,6 +49,7 @@ function App() {
             <Route path="/admin" element={<PrivateLayout><AdminPanel /></PrivateLayout>} />
             <Route path="/about" element={<PrivateLayout><AboutProject /></PrivateLayout>} />
             <Route path="/notifications" element={<PrivateLayout><Notifications /></PrivateLayout>} />
+            <Route path="/edit/:id" element={<PrivateLayout><EditMessagePage /></PrivateLayout>} />
           </Routes>
         </MessagesProvider>
       </ThemeProvider>

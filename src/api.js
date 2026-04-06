@@ -1,5 +1,5 @@
 // api.js
-const BASE_URL = ''; // пустая строка, так как используем прокси
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Универсальная функция обработки ошибок
 const handleError = async (response) => {
@@ -110,31 +110,21 @@ export const updateUser = async (login, data) => {
   return response.json();
 };
 export const requestPasswordReset = async (email) => {
-  const response = await fetch(`${BASE_URL}/user/password/reset/request`, {
+  const response = await fetch('/user/password/reset/request', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
-
-  if (!response.ok) {
-    await handleError(response);
-  }
-
-  return response.text();
+  if (!response.ok) await handleError(response);
 };
 
 export const confirmPasswordReset = async (token, newPassword) => {
-  const response = await fetch(`${BASE_URL}/user/password/reset/confirm`, {
+  const response = await fetch('/user/password/reset/confirm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, newPassword }),
   });
-
-  if (!response.ok) {
-    await handleError(response);
-  }
-
-  return response.text();
+  if (!response.ok) await handleError(response);
 };
 
 const getAuthHeaders = () => {
@@ -230,5 +220,64 @@ export const getIncidentPhotos = async (incidentId) => {
     await handleError(response);
   }
 
+  return response.json();
+};
+
+/**
+ * Получение всех инцидентов для администратора
+ * Использует GET /api/incidents/admin
+ */
+export const getAllAdminIncidents = async () => {
+  const response = await fetch(`${BASE_URL}/api/incidents/admin`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) await handleError(response);
+  return response.json();
+};
+
+/**
+ * Удаление инцидента по ID (только для админа)
+ * Предполагаем, что на сервере есть DELETE /api/incidents/{id}
+ */
+export const deleteIncident = async (incidentId) => {
+  const response = await fetch(`${BASE_URL}/api/incidents/${incidentId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    await handleError(response);
+  }
+
+  // Проверяем, есть ли что-то в ответе, прежде чем парсить JSON
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return response.json();
+  }
+
+  // Если ответа нет (void на сервере), просто возвращаем успех
+  return { success: true }; 
+};
+
+/**
+ * Изменение статуса инцидента (активный/черновик)
+ * Предполагаем PUT /api/incidents/{id}/status с телом { active: boolean }
+ */
+export const updateIncidentStatus = async (incidentId, active) => {
+  const response = await fetch(`${BASE_URL}/api/incidents/${incidentId}/status`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ active }),
+  });
+  if (!response.ok) await handleError(response);
+  return response.json();
+};
+export const updateIncident = async (incidentId, incidentData) => {
+  const response = await fetch(`${BASE_URL}/api/incidents/${incidentId}`, {
+    method: 'PUT', // Spring Boot ждет PUT
+    headers: getAuthHeaders(),
+    body: JSON.stringify(incidentData),
+  });
+  if (!response.ok) await handleError(response);
   return response.json();
 };

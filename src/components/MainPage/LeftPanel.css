@@ -171,3 +171,27 @@
   background: var(--accent) !important;
   color: white !important;
 }
+/* Стилизация скроллбара для LeftPanel */
+.message-feed-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.message-feed-panel::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 10px;
+}
+
+.message-feed-panel::-webkit-scrollbar-thumb {
+  background: var(--accent-light);
+  border-radius: 10px;
+}
+
+.message-feed-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Для Firefox */
+.message-feed-panel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-light) var(--bg-secondary);
+}

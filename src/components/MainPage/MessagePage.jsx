@@ -1,39 +1,34 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
-import placeholderImg from '../../assets/placeholder.png';
+import SecureImage from '../SecureImage/SecureImage';
 import './MessagePage.css';
+
+const categoryLabels = {
+  PARKING: 'Парковка',
+  FOOD_EXPIRED: 'Просроченные продукты'
+};
 
 const MessagePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getMessage, addMessage } = useMessages();
+  const { getMessage, addMessage, currentUserId } = useMessages();
   const [message, setMessage] = useState(null);
   const [saving, setSaving] = useState(false);
-  
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null); // индекс открытого фото
+
   useEffect(() => {
-    const fetchMessage = async () => {
-      try {
-        const data = await getMessage(id);
-        setMessage(data);
-      } catch (err) {
-        console.error('Ошибка загрузки сообщения:', err);
-        alert('Не удалось загрузить сообщение');
-        navigate('/main');
-      }
-    };
-    fetchMessage();
-  }, [id, navigate, getMessage]);
+    let mounted = true;
+    getMessage(id)
+      .then(data => { if (mounted) setMessage(data); })
+      .catch(() => navigate('/main'));
+    return () => { mounted = false; };
+  }, [id, getMessage, navigate]);
 
   const handleSaveAsDraft = async () => {
-    if (!message) return; // Просто выходим, если данных нет
+    if (!message) return;
     setSaving(true);
     try {
-      // ВАЖНО: Если мы хотим сохранить черновик с теми же фото, 
-      // нам нужно передать ФАЙЛЫ. Но так как у нас только ссылки, 
-      // черновик создастся БЕЗ фото. 
-      // Если на бэкенде нет метода "копировать", фото пропадут.
-      
       await addMessage({
         title: message.title,
         description: message.description,
@@ -42,26 +37,76 @@ const MessagePage = () => {
         latitude: message.latitude,
         longitude: message.longitude,
         active: false,
-      }, []); // Передаем пустой массив, т.к. старые фото-ссылки загрузить нельзя
-
-      alert('Черновик успешно создан на основе этого сообщения');
+      }, []);
+      alert('Черновик создан');
       navigate('/drafts');
     } catch (err) {
-      alert('Ошибка при сохранении: ' + err.message);
+      alert('Ошибка: ' + err.message);
     } finally {
       setSaving(false);
     }
   };
 
-  if (!message) return <div>Загрузка...</div>;
+  const handleEdit = () => {
+    navigate(`/edit/${id}`);
+  };
 
-  const photos = message.photos?.length ? message.photos : [placeholderImg];
+  const isOwner = currentUserId && message?.userId === currentUserId;
+
+  // Открыть фото по индексу
+  const openPhoto = (index) => {
+    setSelectedPhotoIndex(index);
+  };
+
+  // Закрыть модальное окно
+  const closeModal = () => {
+    setSelectedPhotoIndex(null);
+  };
+
+  // Переключение на следующее фото
+  const nextPhoto = () => {
+    if (message?.photos && selectedPhotoIndex !== null) {
+      setSelectedPhotoIndex((selectedPhotoIndex + 1) % message.photos.length);
+    }
+  };
+
+  // Переключение на предыдущее фото
+  const prevPhoto = () => {
+    if (message?.photos && selectedPhotoIndex !== null) {
+      setSelectedPhotoIndex((selectedPhotoIndex - 1 + message.photos.length) % message.photos.length);
+    }
+  };
+
+  // Обработка клавиш навигации
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (selectedPhotoIndex === null) return;
+      if (e.key === 'ArrowRight') nextPhoto();
+      if (e.key === 'ArrowLeft') prevPhoto();
+      if (e.key === 'Escape') closeModal();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedPhotoIndex, message?.photos]);
+
+  if (!message) return <div>Загрузка...</div>;
 
   return (
     <div className="message-page">
       <h1 className="page-title">Новое сообщение</h1>
-
       <div className="message-content">
+        <div className="message-field">
+          <label>Автор</label>
+          <div className="message-value">{message.fullName || 'Неизвестный автор'}</div>
+        </div>
+
+        <div className="message-field">
+          <label>Рубрика</label>
+          <div className="message-value">
+            {categoryLabels[message.type] || message.type}
+          </div>
+        </div>
+
         <div className="message-field">
           <label>Тема сообщения</label>
           <div className="message-value">{message.title}</div>
@@ -69,23 +114,25 @@ const MessagePage = () => {
 
         <div className="message-field">
           <label>Фото</label>
-          {photos.length > 0 ? (
-            <div className="photo-gallery">
-              {photos.map((photoUrl, idx) => (
-                <img 
-                  key={idx} 
-                  // Если используете прокси, photoUrl подхватится сам. 
-                  // Если нет — добавьте адрес сервера
-                  src={photoUrl} 
-                  alt={`Событие ${idx + 1}`} 
-                  className="gallery-photo"
-                  onError={(e) => { e.target.src = placeholderImg; }} // Если фото не загрузилось
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="message-value">Нет фотографий</div>
-          )}
+          <div className="photo-gallery">
+            {message.photos && message.photos.length > 0 ? (
+              message.photos.map((photoUrl, idx) => (
+                <div
+                  key={idx}
+                  className="gallery-item"
+                  onClick={() => openPhoto(idx)}
+                >
+                  <SecureImage
+                    src={photoUrl}
+                    alt={`Фото ${idx + 1}`}
+                    className="gallery-photo"
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="message-value">Нет фотографий</div>
+            )}
+          </div>
         </div>
 
         <div className="message-field">
@@ -100,24 +147,39 @@ const MessagePage = () => {
       </div>
 
       <div className="action-panel">
-        <button
-          className="action-btn"
-          title="Сохранить в черновики"
-          onClick={handleSaveAsDraft}
-          disabled={saving}
-        >
+        <button className="action-btn" onClick={handleSaveAsDraft} disabled={saving}>
           {saving ? '⏳' : '📥'}
         </button>
-        <button className="action-btn" title="Сохранить в документы">
-          💾
-        </button>
-        <button className="action-btn" title="Отправить на email">
-          📧
-        </button>
-        <button className="action-btn" title="Печать">
-          🖨️
-        </button>
+        <button className="action-btn">💾</button>
+        <button className="action-btn">📧</button>
+        <button className="action-btn">🖨️</button>
+        {isOwner && (
+          <button className="action-btn" onClick={handleEdit}>✏️</button>
+        )}
       </div>
+
+      {/* Модальное окно для просмотра фото */}
+      {selectedPhotoIndex !== null && message.photos && message.photos.length > 0 && (
+        <div className="photo-modal" onClick={closeModal}>
+          <span className="modal-close" onClick={closeModal}>&times;</span>
+          {message.photos.length > 1 && (
+            <>
+              <button className="modal-prev" onClick={(e) => { e.stopPropagation(); prevPhoto(); }}>❮</button>
+              <button className="modal-next" onClick={(e) => { e.stopPropagation(); nextPhoto(); }}>❯</button>
+            </>
+          )}
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <SecureImage
+              src={message.photos[selectedPhotoIndex]}
+              alt={`Фото ${selectedPhotoIndex + 1}`}
+              className="modal-image"
+            />
+            <div className="photo-counter">
+              {selectedPhotoIndex + 1} / {message.photos.length}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

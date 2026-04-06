@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import PasswordInput from '../PasswordInput/PasswordInput';
 import { confirmPasswordReset } from '../../api';
 import '../Auth/Auth.css';
 import eyeOpen from '../../assets/icons/eye-open.png';
 import eyeClosed from '../../assets/icons/eye-closed.png';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const ResetPassword = () => {
   const navigate = useNavigate();

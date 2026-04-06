@@ -1,6 +1,14 @@
 // contexts/MessagesContext.js
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
-import { getAllIncidents, createIncident, getIncidentById, uploadIncidentPhoto,  getIncidentPhotos, getDraftIncidents } from '../api';
+import {
+  getAllIncidents,
+  createIncident,
+  getIncidentById,
+  uploadIncidentPhoto,
+  getIncidentPhotos,
+  getDraftIncidents,
+  updateIncident,        // <-- добавлен импорт
+} from '../api';
 import placeholderImg from '../assets/placeholder.png';
 
 const MessagesContext = createContext();
@@ -15,94 +23,133 @@ export const MessagesProvider = ({ children }) => {
     const saved = localStorage.getItem('readNotifications');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Текущий ID пользователя из localStorage
+  const currentUserId = localStorage.getItem('userId')
+    ? Number(localStorage.getItem('userId'))
+    : null;
+
   useEffect(() => {
-    localStorage.setItem(
-      'readNotifications',
-      JSON.stringify(readNotifications)
-    );
+    localStorage.setItem('readNotifications', JSON.stringify(readNotifications));
   }, [readNotifications]);
+
   const markAsRead = (id) => {
-    setReadNotifications(prev =>
-      prev.includes(id) ? prev : [...prev, id]
-    );
+    setReadNotifications(prev => prev.includes(id) ? prev : [...prev, id]);
   };
 
   const markAllAsRead = () => {
     setReadNotifications(messages.map(m => m.id));
   };
+
+  // Загрузка списка инцидентов (без превью, показываем плейсхолдер)
   const loadMessages = useCallback(async () => {
     setLoading(true);
     try {
-      // Делаем два запроса одновременно
+      console.log('[Messages] Загружаю список...');
       const [publicIncidents, draftIncidents] = await Promise.all([
-        getAllIncidents(),     // Тот, что без параметра, но мы знаем, что они active
-        getDraftIncidents()    // Тот, что без параметра, но мы знаем, что это черновики
+        getAllIncidents(),
+        getDraftIncidents()
       ]);
 
-      // Руками добавляем поле active для первой группы
-      const normalPublic = publicIncidents.map(inc => ({
+      const allIncidents = [
+        ...publicIncidents.map(inc => ({ ...inc, active: true })),
+        ...draftIncidents.map(inc => ({ ...inc, active: false }))
+      ];
+
+      // Превью пока нет – показываем заглушку. Реальные фото подгрузятся при открытии карточки.
+      const normalized = allIncidents.map(inc => ({
         ...inc,
-        active: true, 
-        preview: inc.photos?.[0] || placeholderImg
+        preview: placeholderImg
       }));
 
-      // Руками добавляем поле active для второй группы
-      const normalDrafts = draftIncidents.map(inc => ({
-        ...inc,
-        active: false,
-        preview: inc.photos?.[0] || placeholderImg
-      }));
-
-      // Соединяем в один массив
-      setMessages([...normalPublic, ...normalDrafts]);
+      setMessages(normalized);
+      console.log(`[Messages] Загружено ${normalized.length} записей`);
     } catch (err) {
-      console.error('Ошибка загрузки:', err);
+      console.error('[Messages] Ошибка загрузки:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Создание нового инцидента + загрузка фото
   const addMessage = async (messageData, photoFiles = []) => {
     try {
-      // 1. Создаем запись об инциденте
+      console.log('[Messages] Создаю инцидент...', messageData);
       const newIncident = await createIncident(messageData);
       const incidentId = newIncident.id;
+      console.log(`[Messages] Инцидент создан, id=${incidentId}`);
 
-      // 2. Если есть выбранные фото, загружаем их
       if (photoFiles.length > 0) {
-        // Загружаем параллельно все файлы
-        await Promise.all(
-          photoFiles.map(photo => uploadIncidentPhoto(incidentId, photo.file))
-        );
+        console.log(`[Messages] Загружаю ${photoFiles.length} фото...`);
+        const uploadPromises = photoFiles.map(file => uploadIncidentPhoto(incidentId, file));
+        await Promise.all(uploadPromises);
+        console.log('[Messages] Все фото загружены');
       }
 
-      await loadMessages(); // Обновляем список
+      await loadMessages(); // обновить список
       return incidentId;
     } catch (err) {
-      console.error('Ошибка при создании инцидента с фото:', err);
+      console.error('[Messages] Ошибка при добавлении:', err);
       throw err;
     }
   };
 
+  // Получение одного инцидента со всеми фото, а также userId и fullName
   const getMessage = async (id) => {
     try {
-      // Получаем данные инцидента и список фото одновременно
+      console.log(`[Messages] Загружаю инцидент ${id}...`);
       const [incident, photosData] = await Promise.all([
         getIncidentById(id),
         getIncidentPhotos(id)
       ]);
 
+      const photos = photosData.map(asset => asset.downloadUrl);
+      console.log(photosData);
+      console.log(`[Messages] Инцидент ${id}, фото: ${photos.length}`);
+
+      // Предполагаем, что incident содержит поля: userId, fullName (из DTO бэкенда)
       return {
         ...incident,
-        // Собираем массив URL из объектов MediaAssetDto
-        photos: photosData.map(asset => asset.downloadUrl)
+        photos,
+        userId: incident.userId,      // добавили для проверки владельца
+        fullName: incident.fullName,  // добавили для отображения автора
       };
     } catch (err) {
-      console.error(`Ошибка получения инцидента ${id}:`, err);
+      console.error(`[Messages] Ошибка получения ${id}:`, err);
       throw err;
     }
   };
+
+  // Обновление инцидента
+  const updateMessage = async (id, messageData) => {
+    try {
+      await updateIncident(id, messageData);
+      await loadMessages(); // обновить список после редактирования
+    } catch (err) {
+      console.error('[Messages] Ошибка обновления:', err);
+      throw err;
+    }
+  };
+  const loadThumbnail = useCallback(async (incidentId) => {
+    // Проверяем, есть ли уже реальное preview у сообщения
+    const existing = messages.find(m => m.id === incidentId);
+    if (existing && existing.preview !== placeholderImg) return;
+
+    try {
+      const photos = await getIncidentPhotos(incidentId);
+      if (photos && photos.length > 0) {
+        const firstPhotoUrl = photos[0].downloadUrl;
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === incidentId ? { ...msg, preview: firstPhotoUrl } : msg
+          )
+        );
+      }
+    } catch (err) {
+      console.warn(`Не удалось загрузить фото для ${incidentId}`, err);
+    }
+  }, [messages]);
 
   useEffect(() => {
     loadMessages();
@@ -116,10 +163,13 @@ export const MessagesProvider = ({ children }) => {
         error,
         addMessage,
         getMessage,
+        updateMessage,
         refreshMessages: loadMessages,
         readNotifications,
         markAsRead,
         markAllAsRead,
+        currentUserId,   // <-- добавляем для использования в компонентах
+        loadThumbnail,
       }}
     >
       {children}

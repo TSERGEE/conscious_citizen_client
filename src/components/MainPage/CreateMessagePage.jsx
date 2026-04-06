@@ -98,7 +98,7 @@ const CreateMessagePage = () => {
         latitude: lat,
         longitude: lng,
         active: true,
-      }, photos); 
+      }, photos.map(p => p.file));
       
       navigate(`/message/${newId}`);
     } catch (err) {
@@ -118,7 +118,6 @@ const CreateMessagePage = () => {
 
     setIsSubmitting(true);
     try {
-      // ПЕРЕДАЕМ photos вторым аргументом
       const newId = await addMessage({
         title: topic,
         description,
@@ -127,11 +126,11 @@ const CreateMessagePage = () => {
         latitude: lat,
         longitude: lng,
         active: false,
-      }, photos); 
+      }, photos.map(p => p.file)); 
       
       navigate(`/drafts`);
     } catch (err) {
-      alert('Ошибка при публикации: ' + err.message);
+      alert('Ошибка при сохранении черновика: ' + err.message);
     } finally {
       setIsSubmitting(false);
     }

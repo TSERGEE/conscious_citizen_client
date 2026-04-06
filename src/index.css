@@ -66,4 +66,4 @@ button:focus-visible {
 }
 
 /* Удаляем медиа-запрос prefers-color-scheme, так как теперь управляем через data-theme */
-@import 'leaflet/dist/leaflet.css';
+/*@import 'leaflet/dist/leaflet.css';*/

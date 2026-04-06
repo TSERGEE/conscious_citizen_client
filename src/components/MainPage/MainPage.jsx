@@ -78,6 +78,18 @@ const getIconByType = (type) => {
 function MapClickHandler({ onMapClick }) {
   useMapEvents({
     click(e) {
+      // Получаем DOM-элемент, по которому кликнули
+      const target = e.originalEvent.target;
+      
+      // Игнорируем клики по элементам управления картой и вашему селектору
+      if (
+        target.closest('.leaflet-control') ||      // стандартные элементы Leaflet (зум, атрибуция)
+        target.closest('.map-layer-selector') ||   // ваш селектор слоёв
+        target.closest('.leaflet-popup')           // клик по попапу (чтобы не закрывался случайно)
+      ) {
+        return;
+      }
+      
       onMapClick(e.latlng);
     },
   });
@@ -103,7 +115,30 @@ function useDebounce(value, delay) {
   }, [value, delay]);
   return debouncedValue;
 }
+function CustomAttributionControl() {
+              const map = useMap();
 
+              useEffect(() => {
+                if (!map) return;
+
+                // Удаляем существующий контроль атрибуции, если вдруг он есть (на всякий случай)
+                map.attributionControl?.remove();
+
+                // Создаём новый контроль
+                const customControl = L.control.attribution({ prefix: false }); // prefix: false убирает стандартный текст Leaflet
+                customControl.addTo(map);
+
+                // Можно также задать свой префикс без флага
+                // customControl.setPrefix('<a href="https://leafletjs.com/">Leaflet</a>'); // без флага
+
+                // Очистка при размонтировании
+                return () => {
+                  map.removeControl(customControl);
+                };
+              }, [map]);
+
+              return null;
+            }
 const MainPage = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -337,10 +372,10 @@ const MainPage = () => {
     <div className="main-page">
       {searchRoot && ReactDOM.createPortal(headerContent, searchRoot)}
       <LeftPanel />
-      <MapContainer center={[53.195873, 50.100193]} zoom={13} className="map-container">
+      <MapContainer center={[53.195873, 50.100193]} zoom={13} className="map-container" attributionControl={false}>
         <TileLayer url={currentLayer.url} attribution={currentLayer.attribution} />
 
-        <div className="map-layer-selector">
+        <div className="map-layer-selector no-map-click" onClick={(e) => e.stopPropagation()}>
           <select
             value={Object.keys(layers).find((key) => layers[key] === currentLayer) || ''}
             onChange={(e) => selectLayer(e.target.value)}
@@ -353,7 +388,7 @@ const MainPage = () => {
           </select>
           {manualOverride && <button onClick={resetToAuto}>Авто</button>}
         </div>
-
+         <CustomAttributionControl />
         <MapClickHandler onMapClick={handleMapClick} />
         {markerPosition && (
           <Marker position={markerPosition}>

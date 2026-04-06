@@ -1,17 +1,19 @@
 .main-page {
   width: 100%;
-  height: 100%;
+  height: 100vh;
   position: relative;
 }
 
 .map-container {
   width: 100%;
   height: 100%;
-  min-height: 885px;
   position: relative;
   z-index: 1;
 }
-
+.no-map-click {
+  cursor: pointer;
+  /* можно добавить другие стили */
+}
 .header-search-block {
   display: flex;
   align-items: center;
@@ -226,6 +228,8 @@
 }
 /* Ваш селектор слоёв — под кнопками масштаба (отступ 70px = высота кнопок + отступ) */
 .map-layer-selector {
+  background: rgba(0, 0, 0, 0.6); /* полупрозрачный тёмный */
+  backdrop-filter: blur(8px);
   position: absolute;
   top: 90px;
   right: 10px;
