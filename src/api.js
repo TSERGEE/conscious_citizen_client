@@ -33,7 +33,7 @@ export const register = async (userData) => {
   }
 
   // Успешный ответ: возвращаем текст (сообщение)
-  return response.json();
+  return response.text();
 };
 
 export const login = async (credentials) => {
