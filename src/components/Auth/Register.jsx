@@ -285,7 +285,7 @@ const Register = () => {
       .trim();
 
     // Формируем address с городом
-    const address = `г. ${profileData.city || 'Самара'}, ул. ${profileData.street}, д. ${profileData.house}${profileData.apartment ? `, кв. ${profileData.apartment}` : ''}`;
+    const address = `г. ${profileData.city || 'Самара'}, ${profileData.street}, д. ${profileData.house}${profileData.apartment ? `, кв. ${profileData.apartment}` : ''}`;
 
 
     const payload = {

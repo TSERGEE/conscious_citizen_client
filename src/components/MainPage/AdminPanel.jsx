@@ -8,8 +8,16 @@ import {
 } from 'recharts';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import {
-  BarChart3, MapPin, MessageSquare, Users,
-  Filter, CheckCircle2, Clock, X
+  BarChart3,
+  MapPin,
+  MessageSquare,
+  Users,
+  Filter,
+  CheckCircle2,
+  Clock,
+  X,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -18,6 +26,7 @@ import {
   getAllAdminIncidents, deleteIncident, getIncidentById,
   updateIncident, getAllUsers, uploadIncidentPhoto, getIncidentPhotos
 } from '../../api';
+import SecureImage from '../SecureImage/SecureImage';
 
 const TABS = [
   { key: 'dashboard', label: 'Аналитика', icon: BarChart3 },
@@ -91,8 +100,14 @@ export default function AdminPanel() {
   const currentUserId = parseInt(localStorage.getItem('userId') || '0');
 
   const [editPhotos, setEditPhotos] = useState([]);        // новые файлы для загрузки
-  const [existingPhotos, setExistingPhotos] = useState([]); // существующие фото (url)
-  const [editPhotosPreviews, setEditPhotosPreviews] = useState([]); // превью новых фото
+  const [existingPhotos, setExistingPhotos] = useState([]);
+  const [newPhotos, setNewPhotos] = useState([]);
+  const [photosToDelete, setPhotosToDelete] = useState([]);
+  const [editPhotosPreviews, setEditPhotosPreviews] = useState([]);
+  const pendingActionRef = useRef('add');
+
+  const [photoViewerIndex, setPhotoViewerIndex] = useState(null);
+  const [photoViewerList, setPhotoViewerList] = useState([]);
   const fileInputRef = useRef(null);
 
   const [currentLayer, setCurrentLayer] = useState(layers.standard);
@@ -108,7 +123,34 @@ export default function AdminPanel() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const allPhotos = [
+    ...existingPhotos.map(photo => ({
+        ...photo,
+        type: 'existing'
+    })),
+    ...newPhotos.map(photo => ({
+        ...photo,
+        type: 'new'
+    }))
+  ];
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
+  const openViewer = (index) => {
+    setCurrentPhotoIndex(index);
+    setIsViewerOpen(true);
+  };
+  const nextPhoto = () => {
+   setCurrentPhotoIndex(prev =>
+      (prev + 1) % allPhotos.length
+   );
+};
+
+const prevPhoto = () => {
+   setCurrentPhotoIndex(prev =>
+      (prev - 1 + allPhotos.length) % allPhotos.length
+   );
+};
   // Загрузка полных данных инцидента перед редактированием
   const handleEditClick = async (incidentId) => {
     setLoadingEditData(true);
@@ -118,7 +160,12 @@ export default function AdminPanel() {
       // Загружаем существующие фото
       const photosData = await getIncidentPhotos(incidentId);
       const photoUrls = photosData.map(p => p.downloadUrl);
-      setExistingPhotos(photoUrls);
+      setExistingPhotos(
+        photosData.map((p, idx) => ({
+          id: p.id ?? idx,
+          url: p.downloadUrl
+        }))
+      );
       setEditPhotos([]);
       setEditPhotosPreviews([]);
       setEditingIncident(fullData);
@@ -135,30 +182,50 @@ export default function AdminPanel() {
       setLoadingEditData(false);
     }
   };
-    const handleAddPhotoClick = () => {
-    fileInputRef.current.click();
+  const handleAddPhotoClick = () => {
+    pendingActionRef.current = 'add';
+    fileInputRef.current?.click();
+  };
+  const handleReplacePhotoClick = () => {
+    pendingActionRef.current = 'replace';
+    fileInputRef.current?.click();
   };
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-    const newPreviews = files.map((file, idx) => ({
-      id: Date.now() + idx,
-      url: URL.createObjectURL(file),
-      file,
+
+    if (!files.length) return;
+
+    const photoObjects = files.map((file, index) => ({
+        id: Date.now() + index,
+        file,
+        previewUrl: URL.createObjectURL(file)
     }));
-    setEditPhotosPreviews(prev => [...prev, ...newPreviews]);
-    setEditPhotos(prev => [...prev, ...files]);
+
+    if (pendingActionRef.current === 'add') {
+        setNewPhotos(prev => [...prev, ...photoObjects]);
+    } else {
+        setNewPhotos(photoObjects);
+    }
+
     e.target.value = '';
   };
-
-  const removeNewPhoto = (id) => {
-    setEditPhotosPreviews(prev => prev.filter(p => p.id !== id));
-    setEditPhotos(prev => prev.filter((_, idx) => {
-      // находим файл по совпадающему preview id – сложно, проще хранить файлы в preview объектах
-    }));
+  const removeNewPhoto = (tempId) => {
+    setNewPhotos(prev =>
+        prev.filter(photo => photo.id !== tempId)
+    );
   };
+  const removeExistingPhoto = (photoId) => {
+    setPhotosToDelete(prev => [...prev, photoId]);
 
+    setExistingPhotos(prev =>
+        prev.filter(photo => photo.id !== photoId)
+    );
+  };
+  const openPhotoViewer = (index, list) => {
+    setPhotoViewerIndex(index);
+    setPhotoViewerList(list);
+  };
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     setEditLoading(true);
@@ -174,12 +241,15 @@ export default function AdminPanel() {
         active: editingIncident.active
       };
       await updateIncident(editingIncident.id, requestData);
-
+      for (const photoId of photosToDelete) {
+        await deleteIncidentPhoto(editingIncident.id, photoId);
+      }
       // 2. Загружаем новые фото (если есть)
-      if (editPhotosPreviews.length > 0) {
-        const uploadPromises = editPhotosPreviews.map(item =>
-          uploadIncidentPhoto(editingIncident.id, item.file)
+      if (newPhotos.length > 0) {
+        const uploadPromises = newPhotos.map(photo =>
+          uploadIncidentPhoto(editingIncident.id, photo.file)
         );
+
         await Promise.all(uploadPromises);
       }
 
@@ -295,18 +365,30 @@ export default function AdminPanel() {
     });
   }, [adminIncidents, filterType]);
 
-  const handleViewDetails = async (id) => {
-    setDetailsLoading(true);
-    try {
-      const fullIncident = await getIncidentById(id);
-      setSelectedMessageDetails(fullIncident);
-    } catch (err) {
-      console.error('Ошибка загрузки деталей инцидента:', err);
-      alert('Не удалось загрузить подробную информацию');
-    } finally {
-      setDetailsLoading(false);
-    }
-  };
+const handleViewDetails = async (id) => {
+  setDetailsLoading(true);
+  try {
+    const fullIncident = await getIncidentById(id);
+    const photosData = await getIncidentPhotos(id);
+    const photoUrls = photosData.map(p => p.downloadUrl);
+
+    // Находим автора в списке пользователей
+    const author = users.find(u => u.id === fullIncident.userId);
+
+    setSelectedMessageDetails({
+      ...fullIncident,
+      photos: photoUrls,
+      authorName: author?.fullName || '—',
+      authorEmail: author?.email || '—',
+      active: fullIncident.active !== undefined ? fullIncident.active : true,
+    });
+  } catch (err) {
+    console.error('Ошибка загрузки деталей инцидента:', err);
+    alert('Не удалось загрузить подробную информацию');
+  } finally {
+    setDetailsLoading(false);
+  }
+};
 
   // Обработчик клика по строке таблицы
   const handleRowClick = (incidentId) => {
@@ -436,7 +518,7 @@ export default function AdminPanel() {
                         <td>{inc.login || '—'}</td>
                         <td className="table-actions-cell" onClick={(e) => e.stopPropagation()}>
                           <button className="btn-table-icon" onClick={() => handleEditClick(inc.id)}>
-                            <X size={16} /> {/* или шестерёнка, но иконки нет – можно поставить любую */}
+                            <Pencil size={16} />
                           </button>
                           <button
                             className="btn-table-icon danger"
@@ -446,7 +528,7 @@ export default function AdminPanel() {
                               action: () => handleDeleteIncident(inc.id)
                             })}
                           >
-                            <X size={16} />
+                            <Trash2 size={16} />
                           </button>
                         </td>
                       </tr>
@@ -483,14 +565,20 @@ export default function AdminPanel() {
                       >
                         <Popup>
                           <div className="map-popup-admin">
-                            <span className={`badge-type ${msg.type?.toLowerCase()}`}>
-                              {msg.type === 'PARKING' ? 'Парковка' : 'Просрочка'}
-                            </span>
-                            <strong>{msg.title}</strong>
+                            <div className="popup-header">
+                              <span className={`badge-type ${msg.type?.toLowerCase()}`}>
+                                {msg.type === 'PARKING' ? 'Парковка' : 'Просрочка'}
+                              </span>
+                              <strong className="popup-title">{msg.title}</strong>
+                            </div>
+
                             <p>{msg.address}</p>
+
                             <div className="popup-actions">
                               <button onClick={() => handleViewDetails(msg.id)}>Подробнее</button>
-                              <button onClick={() => handleEditClick(msg.id)}>Редактировать</button>
+                              <button onClick={() => handleEditClick(msg.id)}>
+                                <Pencil size={14} /> Редактировать
+                              </button>
                               <button
                                 className="btn-del"
                                 onClick={() => setConfirmModal({
@@ -500,7 +588,7 @@ export default function AdminPanel() {
                                   actionName: 'Удалить'
                                 })}
                               >
-                                Удалить
+                                <Trash2 size={14} /> Удалить
                               </button>
                             </div>
                           </div>
@@ -515,53 +603,49 @@ export default function AdminPanel() {
 
           {activeTab === 'users' && (
             <div className="table-card fade-in">
-              <div className="table-header-tool">
-                <h3>База пользователей</h3>
-                {/* Кнопки экспорта и добавления удалены */}
-              </div>
-              <div className="table-responsive">
-                {usersLoading ? (
-                  <div className="loading-spinner">Загрузка пользователей...</div>
-                ) : (
-                  <table className="custom-table">
+              {usersLoading ? (
+                <div className="loading-state">Загрузка пользователей...</div>
+              ) : (
+                <div className="admin-table-wrapper">
+                  <table className="admin-table">
                     <thead>
                       <tr>
-                        <th>Пользователь</th>
+                        <th>ID</th>
+                        <th>ФИО</th>
+                        <th>Email</th>
                         <th>Роль</th>
                         <th>Статус</th>
-                        <th>Сообщений</th>
-                        <th className="text-right">Действия</th>
+                        <th>Инциденты</th>
                       </tr>
                     </thead>
                     <tbody>
                       {users.map(user => (
                         <tr key={user.id}>
-                          <td>
-                            <div className="user-info-cell">
-                              <div className="user-avatar-sm">{user.id}</div>
-                              <div>
-                                <p className="u-name">{user.name}</p>
-                                <p className="u-email">{user.email}</p>
-                              </div>
-                            </div>
+                          <td>{user.id}</td>
+                          <td className="user-name-cell">
+
+                            {user.fullName}
                           </td>
-                          <td><span className="badge-role">{user.role}</span></td>
+                          <td>{user.email}</td>
                           <td>
-                            <span className={`status-indicator ${user.status === 'active' ? 'active' : 'blocked'}`}>
-                              {user.status === 'active' ? 'Активен' : 'Заблокирован'}
+                            <span className={`badge-role ${user.role?.toLowerCase()}`}>
+                              {user.role}
                             </span>
                           </td>
-                          <td>{user.incidentCount || 0}</td>
-                          <td className="text-right">
-                            <button className="btn-table-icon"><Settings size={14} /></button>
-                            <button className="btn-table-icon danger"><X size={14} /></button>
+                          <td>
+                            <span className={`status-dot ${user.active ? 'active' : 'inactive'}`}></span>
+                            {user.active ? 'Активен' : 'Заблокирован'}
+                          </td>
+                          <td className="text-center">
+                            <strong>{user.count || 0}</strong>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                )}
-              </div>
+                  {users.length === 0 && <div className="empty-state">Пользователи не найдены</div>}
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -575,23 +659,31 @@ export default function AdminPanel() {
               <h3>Детали инцидента #{selectedMessageDetails.id}</h3>
               <button onClick={() => setSelectedMessageDetails(null)}><X size={20} /></button>
             </div>
+
             {detailsLoading ? (
               <div className="modal-inner">Загрузка...</div>
             ) : (
               <div className="modal-inner">
                 <p><strong>Заголовок:</strong> {selectedMessageDetails.title}</p>
                 <p><strong>Тип:</strong> {selectedMessageDetails.type === 'PARKING' ? 'Парковка' : 'Просрочка'}</p>
-                <p><strong>Адрес:</strong> {selectedMessageDetails.address}</p>
-                <p><strong>Автор (ID):</strong> {selectedMessageDetails.userId}</p>
+                <p><strong>Адрес:</strong> {selectedMessageDetails.address || '—'}</p>
+                <p><strong>Автор:</strong> {selectedMessageDetails.login}</p>
                 <p><strong>Статус:</strong> {selectedMessageDetails.active ? 'Опубликован' : 'Черновик'}</p>
-                <p><strong>Создано:</strong> {new Date(selectedMessageDetails.created).toLocaleString()}</p>
+                <p><strong>Создано:</strong> {selectedMessageDetails.created ? new Date(selectedMessageDetails.created).toLocaleString() : '—'}</p>
                 <p><strong>Описание:</strong> {selectedMessageDetails.description || 'Нет описания'}</p>
+
                 {selectedMessageDetails.photos && selectedMessageDetails.photos.length > 0 && (
                   <div className="photos-section">
                     <strong>Фотографии:</strong>
                     <div className="photos-grid">
                       {selectedMessageDetails.photos.map((photo, idx) => (
-                        <img key={idx} src={photo} alt={`Фото ${idx + 1}`} className="modal-photo" />
+                        <img
+                          key={idx}
+                          src={photo}
+                          alt={`Фото ${idx + 1}`}
+                          className="modal-photo"
+                          onClick={() => openPhotoViewer(idx, selectedMessageDetails.photos)}
+                        />
                       ))}
                     </div>
                   </div>
@@ -679,10 +771,47 @@ export default function AdminPanel() {
                   {existingPhotos.length > 0 && (
                     <div style={{ marginBottom: '12px' }}>
                       <div style={{ fontSize: '13px', marginBottom: '8px', color: 'var(--text-light)' }}>Текущие фото:</div>
-                      <div className="photo-preview-list" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        {existingPhotos.map((url, idx) => (
-                          <div key={idx} className="photo-preview-item" style={{ position: 'relative', width: '80px', height: '80px' }}>
-                            <img src={url} alt={`фото ${idx+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                      <div className="admin-edit-photos-grid">
+                        {existingPhotos.map(photo => (
+                          <div key={photo.id} className="admin-photo-card">
+                            <SecureImage
+                              src={photo.url}
+                              alt="photo"
+                              className="admin-photo-img"
+                              onClick={() => openPhotoViewer(photo.url)}
+                            />
+
+                            <button
+                              type="button"
+                              className="remove-photo-btn"
+                              onClick={() => removeExistingPhoto(photo.id)}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                        {newPhotos.map(photo => (
+                          <div key={photo.id}>
+                              <img
+                                src={photo.previewUrl}
+                                className="photo-preview"
+                              />
+
+                              <button
+                                onClick={() => removeNewPhoto(photo.id)}
+                              >
+                                ✕
+                              </button>
+                          </div>
+                        ))}
+                        {editPhotosPreviews.map(p => (
+                          <div key={p.id} className="admin-photo-card new">
+                            <img
+                              src={p.url}
+                              alt="New"
+                              className="admin-photo-img"
+                            />
+                            <button onClick={() => removeNewPhoto(p.id)}>✕</button>
                           </div>
                         ))}
                       </div>
@@ -691,17 +820,29 @@ export default function AdminPanel() {
 
                   {/* Новые фото (превью + кнопка удаления) */}
                   <div className="photo-upload">
-                    <button type="button" onClick={handleAddPhotoClick} className="photo-btn">
-                      Добавить фото
-                    </button>
                     <input
                       type="file"
                       ref={fileInputRef}
                       onChange={handleFileChange}
-                      accept="image/*"
                       multiple
+                      accept="image/*"
                       style={{ display: 'none' }}
                     />
+                    <button
+                      type="button"
+                      onClick={handleAddPhotoClick}
+                      className="photo-btn"
+                    >
+                      Добавить фото
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleReplacePhotoClick}
+                      className="photo-btn"
+                    >
+                      Заменить фото
+                    </button>
                   </div>
                   {editPhotosPreviews.length > 0 && (
                     <div className="photo-preview-list" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
@@ -723,8 +864,19 @@ export default function AdminPanel() {
                 </div>
 
                 <div className="modal-actions">
-                  <button type="button" className="btn-secondary" onClick={() => setEditingIncident(null)}>Отмена</button>
-                  <button type="submit" className="btn-primary" disabled={editLoading}>
+                  <button
+                    type="button"
+                    className="btn-modal btn-cancel"
+                    onClick={() => setEditingIncident(null)}
+                  >
+                    Отмена
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="btn-modal btn-save"
+                    disabled={editLoading}
+                  >
                     {editLoading ? 'Сохранение...' : 'Сохранить изменения'}
                   </button>
                 </div>
@@ -733,7 +885,43 @@ export default function AdminPanel() {
           </div>
         </div>
       )}
-          
+      {photoViewerIndex !== null && (
+        <div
+          className="custom-modal-overlay"
+          onClick={() => setPhotoViewerIndex(null)}
+        >
+          <div
+            className="photo-viewer-modal"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() =>
+                setPhotoViewerIndex(prev =>
+                  prev > 0 ? prev - 1 : photoViewerList.length - 1
+                )
+              }
+            >
+              ←
+            </button>
+
+            <img
+              src={photoViewerList[photoViewerIndex]}
+              alt="preview"
+              className="viewer-photo"
+            />
+
+            <button
+              onClick={() =>
+                setPhotoViewerIndex(prev =>
+                  prev < photoViewerList.length - 1 ? prev + 1 : 0
+                )
+              }
+            >
+              →
+            </button>
+          </div>
+        </div>
+      )}    
     </div>
   );
 }

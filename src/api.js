@@ -282,9 +282,100 @@ export const updateIncident = async (incidentId, incidentData) => {
   return response.json();
 };
 export const getAllUsers = async () => {
-  const response = await fetch(`${BASE_URL}/users`, {
+  // Путь должен соответствовать @RequestMapping("/user") + @GetMapping("/admin/userstats")
+  const response = await fetch(`${BASE_URL}/user/admin/userstats`, {
+    headers: getAuthHeaders(),
+  });
+  
+  if (!response.ok) {
+    await handleError(response);
+  }
+  
+  return response.json();
+};
+/**
+ * Генерация документа для инцидента (асинхронная)
+ * POST /api/incidents/{id}/document
+ */
+export const generateDocument = async (incidentId) => {
+  const response = await fetch(`${BASE_URL}/api/incidents/${incidentId}/document`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    await handleError(response);
+  }
+
+  // Ответ 202 Accepted без тела
+  return;
+};
+
+/**
+ * Скачивание документа (attachment)
+ * GET /api/incidents/{id}/document
+ * Возвращает Blob с PDF
+ */
+// api.js — альтернативный вариант без handleError для downloadDocument
+export const downloadDocument = async (incidentId) => {
+  const response = await fetch(`${BASE_URL}/api/incidents/${incidentId}/document`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  if (response.status === 404) {
+    // Пробрасываем специальную ошибку, чтобы waitForDocument мог её распознать
+    const error = new Error('Document not generated');
+    error.status = 404;
+    throw error;
+  }
+
+  if (!response.ok) {
+    await handleError(response);
+  }
+
+  return await response.blob();
+};
+
+/**
+ * Просмотр документа в браузере (inline)
+ * GET /api/incidents/{id}/document/view
+ * Возвращает Blob с PDF
+ */
+export const viewDocument = async (incidentId) => {
+  const response = await fetch(`${BASE_URL}/api/incidents/${incidentId}/document/view`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    await handleError(response);
+  }
+
+  return await response.blob();
+};
+
+/**
+ * Отправка документа по email
+ * POST /api/incidents/{id}/document/send
+ */
+export const sendDocumentByEmail = async (incidentId) => {
+  const response = await fetch(`${BASE_URL}/api/incidents/${incidentId}/document/send`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    await handleError(response);
+  }
+
+  return;
+};
+export const deleteIncidentPhoto = async (incidentId, photoId) => {
+  const response = await fetch(`${BASE_URL}/api/incidents/${incidentId}/photos/${photoId}`, {
+    method: 'DELETE',
     headers: getAuthHeaders(),
   });
   if (!response.ok) await handleError(response);
-  return response.json();
+  // обычно 204 No Content
 };

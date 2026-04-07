@@ -104,16 +104,16 @@ export const MessagesProvider = ({ children }) => {
         getIncidentPhotos(id)
       ]);
 
-      const photos = photosData.map(asset => asset.downloadUrl);
-      console.log(photosData);
-      console.log(`[Messages] Инцидент ${id}, фото: ${photos.length}`);
+      // Пытаемся найти userId в локальном списке messages
+      const cachedIncident = messages.find(m => m.id === Number(id));
+      const userId = cachedIncident?.userId || incident.userId; // если в incident уже есть userId
 
-      // Предполагаем, что incident содержит поля: userId, fullName (из DTO бэкенда)
+      const photos = photosData.map(asset => asset.downloadUrl);
       return {
         ...incident,
         photos,
-        userId: incident.userId,      // добавили для проверки владельца
-        fullName: incident.fullName,  // добавили для отображения автора
+        userId: userId,
+        fullName: incident.fullName,
       };
     } catch (err) {
       console.error(`[Messages] Ошибка получения ${id}:`, err);

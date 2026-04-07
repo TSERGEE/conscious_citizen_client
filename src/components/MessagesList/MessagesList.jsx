@@ -20,7 +20,7 @@ const MessagesList = ({ messages, isDraftList = false }) => {
 
   const handleClick = (id) => {
     if (isDraftList) {
-      navigate(`/create-message/${id}`); // переход на редактирование черновика
+      navigate(`/edit/${id}`); // переход на редактирование черновика
     } else {
       navigate(`/message/${id}`);
     }
