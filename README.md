@@ -1,3 +1,3 @@
-Запуск: 
-npm install
-npm run dev
+Запуск: \n
+npm install\n
+npm run dev\n
