@@ -17,7 +17,7 @@ const MessagesList = ({ messages, isDraftList = false }) => {
       }
     });
   }, [messages, loadThumbnail]);
-
+  console.log('All messages with types:', messages.map(m => ({ id: m.id, type: m.type })));
   const handleClick = (id) => {
     if (isDraftList) {
       navigate(`/edit/${id}`); // переход на редактирование черновика
@@ -36,7 +36,9 @@ const MessagesList = ({ messages, isDraftList = false }) => {
         <div key={msg.id} className="message-card" onClick={() => handleClick(msg.id)}>
           <div className="message-card-header">
             <span className={`category-badge ${msg.type?.toLowerCase()}`}>
-              {msg.type === 'PARKING' ? 'Парковка' : 'Просроченные продукты'}
+              {msg.type === 'PARKING' && 'Парковка'}
+              {msg.type === 'FOOD_EXPIRED' && 'Просроченные продукты'}
+              {!msg.type && 'Без категории'}
             </span>
             <span className="message-date">
               {new Date(msg.created).toLocaleDateString()} в {new Date(msg.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

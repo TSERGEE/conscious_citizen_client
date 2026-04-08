@@ -50,17 +50,20 @@ export const MessagesProvider = ({ children }) => {
         getDraftIncidents()
       ]);
 
-      // Загружаем адреса параллельно, но не даём упасть всему
+      // Загружаем адреса параллельно, но даже при ошибке сохраняем инцидент
       const incidentsWithAddress = await Promise.allSettled(
         publicIncidents.map(async (inc) => {
-          const full = await getIncidentById(inc.id);
-          return { ...inc, address: full.address, active: true };
+          try {
+            const full = await getIncidentById(inc.id);
+            return { ...inc, address: full.address, active: true };
+          } catch (err) {
+            console.warn(`Не удалось загрузить адрес для инцидента ${inc.id}`, err);
+            return { ...inc, address: 'Адрес не загружен', active: true };
+          }
         })
       );
 
-      const validPublic = incidentsWithAddress
-        .filter(result => result.status === 'fulfilled')
-        .map(result => result.value);
+      const validPublic = incidentsWithAddress.map(result => result.value); // берём value даже у rejected
 
       const allIncidents = [
         ...validPublic,
