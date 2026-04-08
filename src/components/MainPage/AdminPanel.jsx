@@ -313,6 +313,7 @@ const prevPhoto = () => {
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
     if (userData.role !== 'ADMIN') navigate('/main');
+    loadUsers();
   }, [navigate]);
 
   useEffect(() => {
@@ -338,6 +339,17 @@ const prevPhoto = () => {
       setUsersLoading(false);
     }
   };
+  // Добавьте функцию получения имени автора
+  const getAuthorName = (userId) => {
+    if (!userId) return '—';
+    const user = users.find(u => u.id === userId);
+    return user ? (user.fullName || user.login || '—') : '—';
+  };
+
+  // Загружаем пользователей при первом рендере (в дополнение к загрузке по вкладке)
+  useEffect(() => {
+    loadUsers(); // загружаем пользователей сразу
+  }, []);
 
   const stats = useMemo(() => ({
     total: messages.length,
@@ -515,7 +527,7 @@ const handleViewDetails = async (id) => {
                         <td>{inc.type === 'PARKING' ? 'Парковка' : 'Просроченные продукты'}</td>
                         <td>{inc.address || '—'}</td>
                         <td>{inc.created ? new Date(inc.created).toLocaleDateString() : '—'}</td>
-                        <td>{inc.login || '—'}</td>
+                        <td>{getAuthorName(inc.userId)}</td>
                         <td className="table-actions-cell" onClick={(e) => e.stopPropagation()}>
                           <button className="btn-table-icon" onClick={() => handleEditClick(inc.id)}>
                             <Pencil size={16} />
@@ -575,7 +587,7 @@ const handleViewDetails = async (id) => {
                             <p>{msg.address}</p>
 
                             <div className="popup-actions">
-                              <button onClick={() => handleViewDetails(msg.id)}>Подробнее</button>
+                             {/* <button onClick={() => handleViewDetails(msg.id)}>Подробнее</button> */}
                               <button onClick={() => handleEditClick(msg.id)}>
                                 <Pencil size={14} /> Редактировать
                               </button>
@@ -667,7 +679,7 @@ const handleViewDetails = async (id) => {
                 <p><strong>Заголовок:</strong> {selectedMessageDetails.title}</p>
                 <p><strong>Тип:</strong> {selectedMessageDetails.type === 'PARKING' ? 'Парковка' : 'Просрочка'}</p>
                 <p><strong>Адрес:</strong> {selectedMessageDetails.address || '—'}</p>
-                <p><strong>Автор:</strong> {selectedMessageDetails.login}</p>
+                <p><strong>Автор:</strong> {selectedMessageDetails.authorName || getAuthorName(selectedMessageDetails.userId)}</p>
                 <p><strong>Статус:</strong> {selectedMessageDetails.active ? 'Опубликован' : 'Черновик'}</p>
                 <p><strong>Создано:</strong> {selectedMessageDetails.created ? new Date(selectedMessageDetails.created).toLocaleString() : '—'}</p>
                 <p><strong>Описание:</strong> {selectedMessageDetails.description || 'Нет описания'}</p>
