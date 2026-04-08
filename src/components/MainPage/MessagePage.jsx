@@ -273,7 +273,7 @@ const MessagePage = () => {
         <button className="action-btn" onClick={handleSaveAsDraft} disabled={saving}>
           {saving ? '⏳' : '📥'}
         </button>
-        <button className="action-btn" onClick={handleDownload} disabled={docLoading.download}>
+        {/*<button className="action-btn" onClick={handleDownload} disabled={docLoading.download}>
           {docLoading.download ? '⏳' : '💾'}
         </button>
         <button className="action-btn" onClick={handleSendEmail} disabled={docLoading.email}>
@@ -281,7 +281,7 @@ const MessagePage = () => {
         </button>
         <button className="action-btn" onClick={handleView} disabled={docLoading.view}>
           {docLoading.view ? '⏳' : '🖨️'}
-        </button>
+        </button>*/}
         {isOwner() && (
           <>
             <button className="action-btn" onClick={handleEdit}>✏️</button>
