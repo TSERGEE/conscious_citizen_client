@@ -1,1 +1,3 @@
-Запуск пока что через nodejs "npm run dev". 
+Запуск: 
+npm install
+npm run dev
