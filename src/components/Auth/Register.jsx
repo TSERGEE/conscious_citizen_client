@@ -12,7 +12,7 @@ import {
   validateCyrillicOnly,
   normalizeAndFormatPhone,
 } from '../../utils/validation';
-import { register } from '../../api';
+import { register, deleteIncidentPhoto  } from '../../api';
 
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);

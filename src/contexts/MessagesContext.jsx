@@ -42,39 +42,32 @@ export const MessagesProvider = ({ children }) => {
   };
 
   // Загрузка списка инцидентов (без превью, показываем плейсхолдер)
-const loadMessages = useCallback(async () => {
-  setLoading(true);
-  try {
-    const [publicIncidents, draftIncidents] = await Promise.all([
-      getAllIncidents(),
-      getDraftIncidents()
-    ]);
+  const loadMessages = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [publicIncidents, draftIncidents] = await Promise.all([
+        getAllIncidents(),
+        getDraftIncidents()
+      ]);
 
-    // Для каждого публичного инцидента догружаем адрес
-    const incidentsWithAddress = await Promise.all(
-      publicIncidents.map(async (inc) => {
-        try {
+      // Загружаем адреса параллельно, но не даём упасть всему
+      const incidentsWithAddress = await Promise.allSettled(
+        publicIncidents.map(async (inc) => {
           const full = await getIncidentById(inc.id);
           return { ...inc, address: full.address, active: true };
-        } catch {
-          return { ...inc, address: 'Адрес не загружен', active: true };
-        }
-      })
-    );
+        })
+      );
 
-    const allIncidents = [
-      ...incidentsWithAddress,
-      ...draftIncidents.map(inc => ({ ...inc, active: false }))
-    ];
+      const validPublic = incidentsWithAddress
+        .filter(result => result.status === 'fulfilled')
+        .map(result => result.value);
 
-      // Превью пока нет – показываем заглушку. Реальные фото подгрузятся при открытии карточки.
-      const normalized = allIncidents.map(inc => ({
-        ...inc,
-        preview: placeholderImg
-      }));
+      const allIncidents = [
+        ...validPublic,
+        ...draftIncidents.map(inc => ({ ...inc, active: false }))
+      ];
 
-      setMessages(normalized);
-      console.log(`[Messages] Загружено ${normalized.length} записей`);
+      setMessages(allIncidents.map(inc => ({ ...inc, preview: placeholderImg })));
     } catch (err) {
       console.error('[Messages] Ошибка загрузки:', err);
       setError(err.message);
@@ -82,7 +75,6 @@ const loadMessages = useCallback(async () => {
       setLoading(false);
     }
   }, []);
-
   // Создание нового инцидента + загрузка фото
   const addMessage = async (messageData, photoFiles = []) => {
     try {
@@ -133,10 +125,12 @@ const loadMessages = useCallback(async () => {
   };
 
   // Обновление инцидента
+// Заменить updateMessage на версию, принимающую все поля
   const updateMessage = async (id, messageData) => {
     try {
       await updateIncident(id, messageData);
-      await loadMessages(); // обновить список после редактирования
+      await loadMessages();
+      
     } catch (err) {
       console.error('[Messages] Ошибка обновления:', err);
       throw err;

@@ -48,7 +48,7 @@ const UnifiedMessagesPage = () => {
       <aside className="unified-sidebar">
         <div className="side-brand">
           <div className="brand-logo">📋</div>
-          <span>Мои обращения</span>
+          <span>Сообщения</span>
         </div>
         <nav className="side-nav">
           {tabs.map(tab => (

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
 import {
+  updateIncidentStatus,
   getIncidentPhotos,
   deleteIncidentPhoto,
   uploadIncidentPhoto,
@@ -142,49 +143,34 @@ const EditMessagePage = () => {
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      return false;
+      return;
     }
 
     setSaving(true);
     try {
-      // Собираем все файлы для нового инцидента
-      const allPhotoFiles = [];
+      // Теперь достаточно одного вызова: PUT /api/incidents/{id} с active: true
+      await updateMessage(id, {
+        title: topic,
+        description,
+        type: category,
+        address,
+        latitude,
+        longitude,
+        active: true,
+      });
 
-      // Новые фото
+      // Фото
+      for (const photoId of photosToDelete) {
+        await deleteIncidentPhoto(id, photoId);
+      }
       for (const photo of newPhotos) {
-        allPhotoFiles.push(photo.file);
+        await uploadIncidentPhoto(id, photo.file);
       }
-
-      // Существующие фото (скачиваем и добавляем)
-      for (const photo of existingPhotos) {
-        const blob = await downloadPhotoAsBlob(photo.url);
-        const file = new File([blob], `photo_${photo.id}.jpg`, { type: blob.type });
-        allPhotoFiles.push(file);
-      }
-
-      // Создаём опубликованный инцидент
-      const newIncidentId = await addMessage(
-        {
-          title: topic,
-          description,
-          type: category,
-          address,
-          latitude,
-          longitude,
-          active: true,
-        },
-        allPhotoFiles
-      );
-
-      // Удаляем старый черновик
-      await deleteIncident(id);
 
       await refreshMessages();
-      navigate(`/message/${newIncidentId}`);
-      return true;
+      navigate(`/message/${id}`);
     } catch (err) {
       alert('Ошибка при публикации: ' + err.message);
-      return false;
     } finally {
       setSaving(false);
     }
@@ -205,6 +191,9 @@ const EditMessagePage = () => {
         description,
         type: category,
         address,
+        latitude,
+        longitude,
+        active: isDraft ? false : true,   // сохраняем текущий статус
       });
 
       for (const photoId of photosToDelete) {
@@ -226,31 +215,34 @@ const EditMessagePage = () => {
 
   // Сохранение как черновик (только для черновиков, иначе предупреждение)
   const saveAsDraft = async () => {
-    if (!isDraft) {
-      alert('Опубликованное сообщение нельзя превратить в черновик без изменения сервера.\nИзменения будут сохранены, но статус останется "опубликован".');
-      await updatePublished();
-      return;
-    }
-
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
+
     setSaving(true);
     try {
+      // Единый вызов для всех случаев: обновляем данные и статус на false
       await updateMessage(id, {
         title: topic,
         description,
         type: category,
         address,
+        latitude,
+        longitude,
+        active: false,
       });
+
+      // Фото
       for (const photoId of photosToDelete) {
         await deleteIncidentPhoto(id, photoId);
       }
       for (const photo of newPhotos) {
         await uploadIncidentPhoto(id, photo.file);
       }
+
+      await refreshMessages();
       navigate('/drafts');
     } catch (err) {
       alert('Ошибка при сохранении черновика: ' + err.message);
