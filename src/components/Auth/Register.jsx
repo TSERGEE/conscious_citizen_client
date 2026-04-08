@@ -370,9 +370,11 @@ const Register = () => {
             onChange={(e) => setAgreeTerms(e.target.checked)}
             required
           />
-          <span>
-            Я согласен с <Link to="/rules" target="_blank">правилами проекта "Сознательный гражданин"</Link>
-          </span>
+            <span>
+                  Я согласен с <Link to="/rules" target="_blank" rel="noopener noreferrer">
+                  правилами проекта "Сознательный гражданин"
+                  </Link>
+            </span>
         </label>
       </div>
 

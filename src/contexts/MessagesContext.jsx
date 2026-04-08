@@ -87,10 +87,19 @@ export const MessagesProvider = ({ children }) => {
       console.log(`[Messages] Инцидент создан, id=${incidentId}`);
 
       if (photoFiles.length > 0) {
-        console.log(`[Messages] Загружаю ${photoFiles.length} фото...`);
-        const uploadPromises = photoFiles.map(file => uploadIncidentPhoto(incidentId, file));
+        console.log(`[Messages] Загружаю ${photoFiles.length} фото для incidentId=${incidentId}`);
+        const uploadPromises = photoFiles.map(async (file, idx) => {
+          try {
+            const result = await uploadIncidentPhoto(incidentId, file);
+            console.log(`[Messages] Фото ${idx} загружено:`, result);
+            return result;
+          } catch (err) {
+            console.error(`[Messages] Ошибка загрузки фото ${idx}:`, err);
+            throw err;
+          }
+        });
         await Promise.all(uploadPromises);
-        console.log('[Messages] Все фото загружены');
+        console.log('[Messages] Все фото успешно загружены');
       }
 
       await loadMessages(); // обновить список

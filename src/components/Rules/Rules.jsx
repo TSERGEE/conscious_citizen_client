@@ -1,14 +1,21 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import './Rules.css';
 
 const Rules = () => {
-  const navigate = useNavigate();
+  const handleBack = () => {
+    // Пытаемся закрыть текущую вкладку
+    window.close();
+    // Если браузер заблокировал window.close() (например, вкладка открыта не через window.open),
+    // показываем подсказку через небольшую задержку
+    setTimeout(() => {
+      alert('Закройте эту вкладку вручную, чтобы вернуться к регистрации');
+    }, 100);
+  };
 
   return (
     <div className="rules-container">
       <div className="rules-header">
-        <button className="back-button" onClick={() => navigate(-1)}>←</button>
+        <button className="back-button" onClick={handleBack}>←</button>
         <h2>Правила проекта</h2>
       </div>
       <div className="rules-content">
@@ -18,7 +25,6 @@ const Rules = () => {
         <p>4. ... (здесь будут все правила, предоставленные заказчиком)</p>
         <p>5. Правила могут быть изменены без предварительного уведомления.</p>
         <p>6. Продолжая использовать сервис, вы соглашаетесь с текущей версией правил.</p>
-        {}
       </div>
     </div>
   );

@@ -23,6 +23,7 @@ useEffect(() => {
       setImageUrl(objectUrl);
     })
     .catch(() => {
+      console.error(`Ошибка загрузки изображения ${src}:`, err);
       if (active) setImageUrl(placeholderImg);
     });
 
