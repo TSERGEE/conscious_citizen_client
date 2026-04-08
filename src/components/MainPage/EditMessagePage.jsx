@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
 import {
-  updateIncidentStatus,
   getIncidentPhotos,
   deleteIncidentPhoto,
   uploadIncidentPhoto,

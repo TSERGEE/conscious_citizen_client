@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
-import { getUser, getUserRole } from '../../api';
+import { getUser, getUserRole, getIncidentCount } from '../../api';
 import './Profile.css';
 
 const Profile = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const { messages } = useMessages();
-  const messageCount = messages.filter(msg => msg.active).length;
+  const { totalCount } = useMessages(); // используем серверный счётчик
 
   useEffect(() => {
     const loadUser = async () => {
@@ -65,7 +65,7 @@ const Profile = () => {
         <p><strong>Телефон:</strong> {userData.phone}</p>
         <p><strong>Email:</strong> {userData.email}</p>   {/* Добавлено */}
         <p><strong>Адрес:</strong> {userData.address}</p>
-        <p><strong>Количество сообщений:</strong> {messageCount}</p>
+        <p><strong>Количество сообщений:</strong> {totalCount}</p>
       </div>
       <div className="profile-actions">
         <button onClick={handleEdit} className="edit-btn">Редактировать</button>

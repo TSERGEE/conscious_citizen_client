@@ -7,7 +7,8 @@ import {
   uploadIncidentPhoto,
   getIncidentPhotos,
   getDraftIncidents,
-  updateIncident,        // <-- добавлен импорт
+  updateIncident,
+  getIncidentCount,
 } from '../api';
 import placeholderImg from '../assets/placeholder.png';
 
@@ -23,8 +24,8 @@ export const MessagesProvider = ({ children }) => {
     const saved = localStorage.getItem('readNotifications');
     return saved ? JSON.parse(saved) : [];
   });
+  const [totalCount, setTotalCount] = useState(0);
 
-  // Текущий ID пользователя из localStorage
   const currentUserId = localStorage.getItem('userId')
     ? Number(localStorage.getItem('userId'))
     : null;
@@ -40,77 +41,108 @@ export const MessagesProvider = ({ children }) => {
   const markAllAsRead = () => {
     setReadNotifications(messages.map(m => m.id));
   };
-
-  // Загрузка списка инцидентов (без превью, показываем плейсхолдер)
+  const loadTotalCount = useCallback(async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setTotalCount(0);
+      return;
+    }
+    try {
+      const count = await getIncidentCount();
+      setTotalCount(count);
+    } catch (err) {
+      console.error('[Messages] Ошибка загрузки количества:', err);
+      // Не сбрасываем totalCount, оставляем предыдущее значение
+    }
+  }, []);
   const loadMessages = useCallback(async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      console.log('[Messages] Нет токена, пропускаем загрузку');
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+    setError(null);
     try {
       const [publicIncidents, draftIncidents] = await Promise.all([
         getAllIncidents(),
         getDraftIncidents()
       ]);
 
-      // Загружаем адреса параллельно, но даже при ошибке сохраняем инцидент
+      // Логируем структуру полей для отладки
+      if (publicIncidents.length) {
+        console.log('[Messages] Пример publicIncident:', Object.keys(publicIncidents[0]));
+      }
+      if (draftIncidents.length) {
+        console.log('[Messages] Пример draftIncident:', Object.keys(draftIncidents[0]));
+      }
+
       const incidentsWithAddress = await Promise.allSettled(
         publicIncidents.map(async (inc) => {
           try {
             const full = await getIncidentById(inc.id);
             return { ...inc, address: full.address, active: true };
           } catch (err) {
-            console.warn(`Не удалось загрузить адрес для инцидента ${inc.id}`, err);
+            console.warn(`Адрес для инцидента ${inc.id} не загружен`, err);
             return { ...inc, address: 'Адрес не загружен', active: true };
           }
         })
       );
 
-      const validPublic = incidentsWithAddress.map(result => result.value); // берём value даже у rejected
-
+      const validPublic = incidentsWithAddress.map(result => result.value);
       const allIncidents = [
         ...validPublic,
         ...draftIncidents.map(inc => ({ ...inc, active: false }))
       ];
 
       setMessages(allIncidents.map(inc => ({ ...inc, preview: placeholderImg })));
+      // После обновления списка инцидентов обновляем счётчик
+      await loadTotalCount();
     } catch (err) {
       console.error('[Messages] Ошибка загрузки:', err);
       setError(err.message);
+      if (err.message.includes('токен') || err.message.includes('login')) {
+        setMessages([]);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
-  // Создание нового инцидента + загрузка фото
+  }, [loadTotalCount]);
+
+  // Создание инцидента с принудительной активацией
   const addMessage = async (messageData, photoFiles = []) => {
     try {
       console.log('[Messages] Создаю инцидент...', messageData);
+      // Создаём инцидент (бэкенд может проигнорировать active при создании)
       const newIncident = await createIncident(messageData);
       const incidentId = newIncident.id;
-      console.log(`[Messages] Инцидент создан, id=${incidentId}`);
+      console.log('[Messages] Инцидент создан, id=', incidentId);
 
-      if (photoFiles.length > 0) {
-        console.log(`[Messages] Загружаю ${photoFiles.length} фото для incidentId=${incidentId}`);
-        const uploadPromises = photoFiles.map(async (file, idx) => {
-          try {
-            const result = await uploadIncidentPhoto(incidentId, file);
-            console.log(`[Messages] Фото ${idx} загружено:`, result);
-            return result;
-          } catch (err) {
-            console.error(`[Messages] Ошибка загрузки фото ${idx}:`, err);
-            throw err;
-          }
-        });
-        await Promise.all(uploadPromises);
-        console.log('[Messages] Все фото успешно загружены');
+      // Если нужно сделать инцидент активным (active === true), принудительно обновляем
+      if (messageData.active === true) {
+        await updateIncident(incidentId, { active: true });
+        console.log('[Messages] Инцидент активирован через updateIncident');
       }
 
-      await loadMessages(); // обновить список
+      // Загружаем фото, если есть
+      if (photoFiles.length > 0) {
+        const uploadPromises = photoFiles.map(file => uploadIncidentPhoto(incidentId, file));
+        await Promise.all(uploadPromises);
+        console.log('[Messages] Фото загружены');
+      }
+
+      // Перезагружаем список инцидентов
+      await loadMessages();
       return incidentId;
     } catch (err) {
-      console.error('[Messages] Ошибка при добавлении:', err);
+      console.error('[Messages] Ошибка при добавлении инцидента:', err);
       throw err;
     }
   };
 
-  // Получение одного инцидента со всеми фото, а также userId и fullName
   const getMessage = async (id) => {
     try {
       console.log(`[Messages] Загружаю инцидент ${id}...`);
@@ -118,11 +150,8 @@ export const MessagesProvider = ({ children }) => {
         getIncidentById(id),
         getIncidentPhotos(id)
       ]);
-
-      // Пытаемся найти userId в локальном списке messages
       const cachedIncident = messages.find(m => m.id === Number(id));
-      const userId = cachedIncident?.userId || incident.userId; // если в incident уже есть userId
-
+      const userId = cachedIncident?.userId || incident.userId;
       const photos = photosData.map(asset => asset.downloadUrl);
       return {
         ...incident,
@@ -136,23 +165,19 @@ export const MessagesProvider = ({ children }) => {
     }
   };
 
-  // Обновление инцидента
-// Заменить updateMessage на версию, принимающую все поля
   const updateMessage = async (id, messageData) => {
     try {
       await updateIncident(id, messageData);
       await loadMessages();
-      
     } catch (err) {
       console.error('[Messages] Ошибка обновления:', err);
       throw err;
     }
   };
+
   const loadThumbnail = useCallback(async (incidentId) => {
-    // Проверяем, есть ли уже реальное preview у сообщения
     const existing = messages.find(m => m.id === incidentId);
     if (existing && existing.preview !== placeholderImg) return;
-
     try {
       const photos = await getIncidentPhotos(incidentId);
       if (photos && photos.length > 0) {
@@ -185,8 +210,9 @@ export const MessagesProvider = ({ children }) => {
         readNotifications,
         markAsRead,
         markAllAsRead,
-        currentUserId,   // <-- добавляем для использования в компонентах
+        currentUserId,
         loadThumbnail,
+        totalCount,
       }}
     >
       {children}

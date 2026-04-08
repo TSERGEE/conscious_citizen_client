@@ -24,7 +24,7 @@ import 'leaflet/dist/leaflet.css';
 import './AdminPanel.css';
 import {
   getAllAdminIncidents, deleteIncident, getIncidentById,
-  updateIncident, getAllUsers, uploadIncidentPhoto, getIncidentPhotos
+  updateIncident, getAllUsers,getAllIncidents, uploadIncidentPhoto, getIncidentPhotos
 } from '../../api';
 import SecureImage from '../SecureImage/SecureImage';
 
@@ -285,19 +285,14 @@ const prevPhoto = () => {
   const loadAdminIncidents = async () => {
     setAdminLoading(true);
     try {
-      const data = await getAllAdminIncidents();
-      const incidentsWithStatus = data.map(inc => ({
-        ...inc,
-        active: inc.active !== undefined ? inc.active : true
-      }));
-      setAdminIncidents(incidentsWithStatus);
+      const data = await getAllAdminIncidents();   // ✅ объявляем const
+      setAdminIncidents(data);
     } catch (err) {
-      console.error('Ошибка загрузки:', err);
+      console.error(err);
     } finally {
       setAdminLoading(false);
     }
   };
-
   const handleDeleteIncident = async (id) => {
     try {
       await deleteIncident(id);
@@ -328,17 +323,17 @@ const prevPhoto = () => {
     }
   }, [activeTab]);
 
-  const loadUsers = async () => {
-    setUsersLoading(true);
-    try {
-      const data = await getAllUsers(); // предполагаемая функция API
-      setUsers(data);
-    } catch (err) {
-      console.error('Ошибка загрузки пользователей:', err);
-    } finally {
-      setUsersLoading(false);
-    }
-  };
+const loadUsers = async () => {
+  setUsersLoading(true);
+  try {
+    const usersData = await getAllUsers();
+    setUsers(usersData);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setUsersLoading(false);
+  }
+};
   // Добавьте функцию получения имени автора
   const getAuthorName = (userId) => {
     if (!userId) return '—';
