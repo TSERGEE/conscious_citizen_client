@@ -42,19 +42,30 @@ export const MessagesProvider = ({ children }) => {
   };
 
   // Загрузка списка инцидентов (без превью, показываем плейсхолдер)
-  const loadMessages = useCallback(async () => {
-    setLoading(true);
-    try {
-      console.log('[Messages] Загружаю список...');
-      const [publicIncidents, draftIncidents] = await Promise.all([
-        getAllIncidents(),
-        getDraftIncidents()
-      ]);
+const loadMessages = useCallback(async () => {
+  setLoading(true);
+  try {
+    const [publicIncidents, draftIncidents] = await Promise.all([
+      getAllIncidents(),
+      getDraftIncidents()
+    ]);
 
-      const allIncidents = [
-        ...publicIncidents.map(inc => ({ ...inc, active: true })),
-        ...draftIncidents.map(inc => ({ ...inc, active: false }))
-      ];
+    // Для каждого публичного инцидента догружаем адрес
+    const incidentsWithAddress = await Promise.all(
+      publicIncidents.map(async (inc) => {
+        try {
+          const full = await getIncidentById(inc.id);
+          return { ...inc, address: full.address, active: true };
+        } catch {
+          return { ...inc, address: 'Адрес не загружен', active: true };
+        }
+      })
+    );
+
+    const allIncidents = [
+      ...incidentsWithAddress,
+      ...draftIncidents.map(inc => ({ ...inc, active: false }))
+    ];
 
       // Превью пока нет – показываем заглушку. Реальные фото подгрузятся при открытии карточки.
       const normalized = allIncidents.map(inc => ({

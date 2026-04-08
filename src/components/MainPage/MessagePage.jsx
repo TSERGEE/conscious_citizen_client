@@ -216,7 +216,7 @@ const MessagePage = () => {
 
   return (
     <div className="message-page">
-      <h1 className="page-title">Новое сообщение</h1>
+      <h1 className="page-title">Сообщение</h1>
       <div className="message-content">
         <div className="message-field">
           <label>Автор</label>

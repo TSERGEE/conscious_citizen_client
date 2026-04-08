@@ -31,15 +31,20 @@
   font-size: 14px;
 }
 
-.profile-form input {
+.profile-container .input-wrapper input {
   width: 100%;
   padding: 14px;
   border: 2px solid var(--border-light);
   border-radius: 10px;
   font-size: 16px;
-  transition: border-color 0.3s;
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  transition: border-color 0.3s;
+}
+
+.profile-container .input-wrapper input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .profile-form input:focus {
@@ -265,21 +270,4 @@
   color: var(--text-muted);
   cursor: default;
   text-align: center;
-}
-
-/* Дополнительно: стили для поля ввода, если требуется */
-.profile-container .input-wrapper input {
-  width: 100%;
-  padding: 10px 12px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.2s;
-}
-
-.profile-container .input-wrapper input:focus {
-  border-color: var(--accent);
-  outline: none;
 }

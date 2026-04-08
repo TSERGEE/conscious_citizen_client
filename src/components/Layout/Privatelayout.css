@@ -262,3 +262,27 @@
   border-radius: 8px;
   cursor: pointer;
 }
+/* Кастомный скроллбар для меню уведомлений */
+.notif-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notif-dropdown::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 10px;
+}
+
+.notif-dropdown::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 10px;
+}
+
+.notif-dropdown::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover);
+}
+
+/* Для Firefox */
+.notif-dropdown {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) var(--bg-secondary);
+}

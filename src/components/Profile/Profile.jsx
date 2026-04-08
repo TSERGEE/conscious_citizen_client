@@ -8,7 +8,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const { messages } = useMessages();
-  const messageCount = messages.filter(msg => !msg.isDraft).length;
+  const messageCount = messages.filter(msg => msg.active).length;
 
   useEffect(() => {
     const loadUser = async () => {

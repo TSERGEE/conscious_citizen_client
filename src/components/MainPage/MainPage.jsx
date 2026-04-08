@@ -412,7 +412,7 @@ const MainPage = () => {
               <Popup>
                 <div className="message-popup">
                   <strong>{msg.title}</strong>
-                  <p>{msg.address}</p>
+                  <p><strong>Адрес:</strong> {msg.address}</p>
                   <button onClick={() => navigate(`/message/${msg.id}`)}>
                     Подробнее
                   </button>

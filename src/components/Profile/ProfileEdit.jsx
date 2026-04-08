@@ -4,24 +4,20 @@ import { validateHouse, validateApartment, validatePhone, validateCyrillicWithHy
 import './Profile.css';
 import { getUser } from '../../api';
 
-// Простейший debounce hook
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
-
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedValue(value), delay);
     return () => clearTimeout(handler);
   }, [value, delay]);
-
   return debouncedValue;
 };
 
+
 const ProfileEdit = () => {
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
   const streetSuggestionsRef = useRef(null);
 
-  // Состояние формы
   const [formData, setFormData] = useState({
     lastName: '',
     firstName: '',
@@ -31,50 +27,39 @@ const ProfileEdit = () => {
     street: '',
     house: '',
     apartment: '',
-    email: '',        // <-- добавить
-    photo: '',
-    isAdmin: true,
+    email: '',
   });
 
-  // Ошибки валидации
-  const [errors, setErrors] = useState({});
-
-  // Состояния для подсказок улиц
+  // Добавляем состояние ошибки для email
+  const [errors, setErrors] = useState({}); // уже есть, но убедимся что поле email будет обрабатываться
   const [streetSuggestions, setStreetSuggestions] = useState([]);
   const [showStreetSuggestions, setShowStreetSuggestions] = useState(false);
   const [isFetchingStreets, setIsFetchingStreets] = useState(false);
   const [selectedStreet, setSelectedStreet] = useState(false);
+  const [hasUserInteractedWithStreet, setHasUserInteractedWithStreet] = useState(false);
 
-  // Debounce для ввода улицы
   const debouncedStreet = useDebounce(formData.street, 500);
 
   useEffect(() => {
     const loadUser = async () => {
       try {
         const login = localStorage.getItem('userLogin');
-
         if (!login) {
           navigate('/login');
           return;
         }
-
         const user = await getUser(login);
-
         const fullNameParts = user.fullName?.split(' ') || [];
-
         const lastName = fullNameParts[0] || '';
         const firstName = fullNameParts[1] || '';
         const middleName = fullNameParts[2] || '';
-        
         const addressParts = user.address?.split(',') || [];
-
         const city = addressParts[0]?.trim() || 'Самара';
         const street = addressParts[1]?.trim() || '';
         const extractNumberPart = (s) => {
-          const match = s?.match(/(\d.*)/); // берём всё от первой цифры до конца
+          const match = s?.match(/(\d.*)/);
           return match ? match[1].trim() : '';
         };
-
         const house = extractNumberPart(addressParts[2]);
         const apartment = extractNumberPart(addressParts[3]);
 
@@ -93,21 +78,34 @@ const ProfileEdit = () => {
         if (street) {
           setSelectedStreet(true);
         }
-        //console.log(localStorage.getItem('userLogin'));
-
       } catch (e) {
         console.error(e);
         navigate('/profile');
       }
     };
-
     loadUser();
   }, [navigate]);
+  // Валидация email (аналогично Register)
+  const validateEmail = (email) => {
+    if (!email) return 'Email обязателен';
+    const re = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+    if (!re.test(email)) return 'Некорректный email';
+    const [localPart, domain] = email.split('@');
+    if (localPart.startsWith('.') || localPart.endsWith('.')) return 'Email не может начинаться или заканчиваться точкой до @';
+    if (localPart.includes('..')) return 'Email не может содержать две точки подряд до @';
+    const domainParts = domain.split('.');
+    const tld = domainParts[domainParts.length - 1];
+    if (!/^[a-zA-Z]{2,}$/.test(tld)) return 'Домен верхнего уровня должен содержать только буквы (минимум 2 символа)';
+    if (domainParts.some(part => part.startsWith('-') || part.endsWith('-'))) {
+      return 'Сегменты домена не могут начинаться или заканчиваться дефисом';
+    }
+    return '';
+  };
 
-  // Получение подсказок улиц через Nominatim
+  // Получение подсказок улиц только если пользователь взаимодействовал с полем
   useEffect(() => {
     const fetchStreetSuggestions = async () => {
-      if (!debouncedStreet.trim() || debouncedStreet.length < 3) {
+      if (!debouncedStreet.trim() || debouncedStreet.length < 3 || !hasUserInteractedWithStreet) {
         setStreetSuggestions([]);
         setShowStreetSuggestions(false);
         return;
@@ -120,7 +118,6 @@ const ProfileEdit = () => {
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`
         );
         const data = await response.json();
-        // Извлекаем названия улиц
         const uniqueStreets = data
           .map(item => item.address?.road || item.display_name.split(',')[0])
           .filter((street, index, self) => street && self.indexOf(street) === index);
@@ -136,9 +133,8 @@ const ProfileEdit = () => {
     };
 
     fetchStreetSuggestions();
-  }, [debouncedStreet]);
+  }, [debouncedStreet, hasUserInteractedWithStreet]);
 
-  // Закрытие подсказок при клике вне
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (streetSuggestionsRef.current && !streetSuggestionsRef.current.contains(event.target)) {
@@ -149,26 +145,34 @@ const ProfileEdit = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // В обработчике handleChange добавим для email
   const handleChange = (e) => {
     const { name, value } = e.target;
     let newValue = value;
-
     if (name === 'phone') {
       newValue = value.replace(/\D/g, '');
     }
     if (name === 'street') {
-      setSelectedStreet(false); // сброс флага при ручном вводе
+      setSelectedStreet(false);
+      setHasUserInteractedWithStreet(true);
     }
-
     setFormData(prev => ({ ...prev, [name]: newValue }));
 
-    if (name !== 'phone') {
+    // Валидация для email
+    if (name === 'email') {
+      const error = validateEmail(newValue);
+      setErrors(prev => ({ ...prev, email: error }));
+    } else if (name !== 'phone') {
       validateField(name, newValue);
     } else {
       setErrors(prev => ({ ...prev, phone: '' }));
     }
   };
-
+  // Обработчик blur для email (можно продублировать валидацию)
+  const handleEmailBlur = () => {
+    const error = validateEmail(formData.email);
+    setErrors(prev => ({ ...prev, email: error }));
+  };
   const handlePhoneBlur = () => {
     const formatted = normalizeAndFormatPhone(formData.phone);
     if (formatted !== formData.phone) {
@@ -177,21 +181,11 @@ const ProfileEdit = () => {
     validateField('phone', formatted);
   };
 
-  const handlePhotoClick = () => fileInputRef.current?.click();
-
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData(prev => ({ ...prev, photo: reader.result }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemovePhoto = () => {
-    setFormData(prev => ({ ...prev, photo: '' }));
+  const handleStreetFocus = () => {
+    setHasUserInteractedWithStreet(true);
+    if (streetSuggestions.length > 0 && !showStreetSuggestions) {
+      setShowStreetSuggestions(true);
+    }
   };
 
   const validateField = (name, value) => {
@@ -214,7 +208,6 @@ const ProfileEdit = () => {
         break;
       case 'street':
         if (!value.trim()) error = 'Обязательное поле';
-        // проверка по selectedStreet будет в handleSubmit
         break;
       case 'house':
         if (!value.trim()) error = 'Обязательное поле';
@@ -240,15 +233,12 @@ const ProfileEdit = () => {
 
     let phoneForValidation = formData.phone;
     const normalizedPhone = normalizeAndFormatPhone(formData.phone);
-    
     if (normalizedPhone !== formData.phone) {
       setFormData(prev => ({ ...prev, phone: normalizedPhone }));
       phoneForValidation = normalizedPhone;
     }
 
     const newErrors = {};
-
-    // ===== ВАЛИДАЦИЯ (оставляем ВСЁ) =====
 
     if (!formData.lastName.trim()) {
       newErrors.lastName = 'Обязательное поле';
@@ -271,12 +261,15 @@ const ProfileEdit = () => {
     } else if (!validatePhone(phoneForValidation)) {
       newErrors.phone = 'Некорректный формат';
     }
+    if (!formData.email.trim()) {
+      newErrors.email = 'Обязательное поле';
+    } else if (validateEmail(formData.email)) {
+      newErrors.email = validateEmail(formData.email);
+    }
 
     if (!formData.street.trim()) {
       newErrors.street = 'Обязательное поле';
-    } /*else if (!selectedStreet) {
-      newErrors.street = 'Выберите из списка';
-    }*/
+    }
 
     if (!formData.house.trim()) {
       newErrors.house = 'Обязательное поле';
@@ -293,8 +286,6 @@ const ProfileEdit = () => {
     if (Object.keys(newErrors).length > 0) {
       return;
     }
-
-    // ===== ОТПРАВКА НА СЕРВЕР =====
 
     try {
       const login = localStorage.getItem('userLogin');
@@ -320,11 +311,8 @@ const ProfileEdit = () => {
       }
 
       const updatedUser = await response.json();
-      // можно сохранить локально (кэш)
       localStorage.setItem('userProfile', JSON.stringify(updatedUser));
-
       navigate('/profile');
-
     } catch (err) {
       console.error(err);
       alert('Ошибка при сохранении профиля');
@@ -335,36 +323,6 @@ const ProfileEdit = () => {
     <div className="profile-container">
       <h2>Редактирование профиля</h2>
       <form onSubmit={handleSubmit} className="profile-form">
-        <div className="form-group">
-          <label>Фото профиля</label>
-          <div className="photo-upload">
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              onChange={handlePhotoChange}
-              style={{ display: 'none' }}
-            />
-            {formData.photo ? (
-              <div className="photo-preview">
-                <img src={formData.photo} alt="preview" />
-              </div>
-            ) : (
-              <div className="photo-placeholder">Нет фото</div>
-            )}
-            <div className="photo-actions">
-              <button type="button" onClick={handlePhotoClick}>
-                {formData.photo ? 'Заменить' : 'Загрузить'}
-              </button>
-              {formData.photo && (
-                <button type="button" className="remove-btn" onClick={handleRemovePhoto}>
-                  Удалить
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
         <div className="form-group">
           <label>Фамилия *</label>
           <input
@@ -414,19 +372,23 @@ const ProfileEdit = () => {
           />
           {errors.phone && <span className="error-message">{errors.phone}</span>}
         </div>
+
         <div className="form-group">
           <label>Email *</label>
           <input
             type="email"
             name="email"
             value={formData.email}
-            className="readonly-field"
+            onChange={handleChange}
+            onBlur={handleEmailBlur}
+            className={errors.email ? 'error' : ''}
           />
+          {errors.email && <span className="error-message">{errors.email}</span>}
         </div>
 
         <div className="form-group">
           <label>Город</label>
-          <input type="text" name="city" value={formData.city} onChange={handleChange} disabled />
+          <input type="text" name="city" value={formData.city} disabled />
         </div>
 
         <div className="form-group" ref={streetSuggestionsRef}>
@@ -437,9 +399,7 @@ const ProfileEdit = () => {
               name="street"
               value={formData.street}
               onChange={handleChange}
-              onFocus={() => {
-                if (streetSuggestions.length > 0) setShowStreetSuggestions(true);
-              }}
+              onFocus={handleStreetFocus}
               className={errors.street ? 'error' : ''}
               autoComplete="off"
             />
