@@ -9,6 +9,40 @@
   border-radius: 16px;
   padding: 40px;
   box-shadow: var(--shadow-md);
+  position: relative; /* ← для кнопки */
+}
+
+/* Кнопка домой */
+.home-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: var(--accent-light);
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+}
+
+.home-button:hover {
+  background-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.home-button .icon-img {
+  width: 24px;
+  height: 24px;
+}
+
+[data-theme="dark"] .home-button .icon-img {
+  filter: brightness(0) invert(1);
 }
 
 .about-title {
