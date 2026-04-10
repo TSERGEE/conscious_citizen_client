@@ -24,7 +24,7 @@ import 'leaflet/dist/leaflet.css';
 import './AdminPanel.css';
 import {
   getAllAdminIncidents, deleteIncident, getIncidentById,
-  updateIncident, getAllUsers,getAllIncidents, uploadIncidentPhoto, getIncidentPhotos
+  updateIncident, getAllUsers,getAllIncidents, uploadIncidentPhoto, getIncidentPhotos, deleteIncidentPhoto
 } from '../../api';
 import SecureImage from '../SecureImage/SecureImage';
 
@@ -166,6 +166,7 @@ const prevPhoto = () => {
         }))
       );
       setEditPhotos([]);
+      setPhotosToDelete([]);
       setNewPhotos([]);
       setEditingIncident(fullData);
       setEditForm({
@@ -780,9 +781,11 @@ const handleViewDetails = async (id) => {
                 <div className="form-group">
                   <label>Фотографии</label>
                   {/* Существующие фото (только просмотр) */}
-                  {existingPhotos.length > 0 && (
+                  {(existingPhotos.length > 0 || newPhotos.length > 0) && (
                     <div style={{ marginBottom: '12px' }}>
-                      <div style={{ fontSize: '13px', marginBottom: '8px', color: 'var(--text-light)' }}>Текущие фото:</div>
+                      <div style={{ fontSize: '13px', marginBottom: '8px', color: 'var(--text-light)' }}>
+                        {existingPhotos.length > 0 ? 'Текущие фото:' : 'Новые фото:'}
+                      </div>
                       <div className="admin-edit-photos-grid">
                         {existingPhotos.map(photo => (
                           <div key={photo.id} className="admin-photo-card">
@@ -797,7 +800,6 @@ const handleViewDetails = async (id) => {
                                 )
                               }
                             />
-
                             <button
                               type="button"
                               className="remove-photo-btn"
@@ -807,25 +809,22 @@ const handleViewDetails = async (id) => {
                             </button>
                           </div>
                         ))}
-                        {/* Блок отрисовки новых фото */}
-                          {newPhotos.map(photo => (
-                            <div key={photo.id} className="admin-photo-card"> {/* Добавлен класс контейнера */}
-                              <img
-                                src={photo.previewUrl}
-                                className="photo-preview"
-                                alt="new-preview"
-                              />
-
-                              <button
-                                type="button" /* Добавлено, чтобы форма случайно не отправилась */
-                                className="remove-photo-btn" /* Добавлен класс для позиционирования крестика */
-                                onClick={() => removeNewPhoto(photo.id)}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        
+                        {newPhotos.map(photo => (
+                          <div key={photo.id} className="admin-photo-card">
+                            <img
+                              src={photo.previewUrl}
+                              className="photo-preview"
+                              alt="new-preview"
+                            />
+                            <button
+                              type="button"
+                              className="remove-photo-btn"
+                              onClick={() => removeNewPhoto(photo.id)}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
