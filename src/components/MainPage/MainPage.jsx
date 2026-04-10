@@ -363,7 +363,7 @@ const MainPage = () => {
         </button>
       </div>
       <button className="next-btn" onClick={handleNext}>
-        Далее
+        Создание
       </button>
     </div>
   );

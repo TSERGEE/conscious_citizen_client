@@ -5,15 +5,15 @@ import {
   getIncidentPhotos,
   deleteIncidentPhoto,
   uploadIncidentPhoto,
-  deleteIncident,
 } from '../../api';
 import SecureImage from '../SecureImage/SecureImage';
+import homeIcon from '../../assets/icons/home.png'; // импорт иконки домой
 import './CreateMessagePage.css';
 
 const EditMessagePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getMessage, addMessage, updateMessage, messages, refreshMessages } = useMessages();
+  const { getMessage, updateMessage, refreshMessages, messages } = useMessages();
 
   // Текстовые поля
   const [topic, setTopic] = useState('');
@@ -25,6 +25,7 @@ const EditMessagePage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [toast, setToast] = useState({ message: '', type: '' });
 
   // Фото
   const [existingPhotos, setExistingPhotos] = useState([]);
@@ -32,6 +33,12 @@ const EditMessagePage = () => {
   const [photosToDelete, setPhotosToDelete] = useState([]);
   const fileInputRef = useRef(null);
   const pendingActionRef = useRef('add');
+
+  // Функция показа уведомления
+  const showToast = (message, type = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast({ message: '', type: '' }), 2000);
+  };
 
   // Определяем, является ли текущий инцидент черновиком
   const isDraft = messages.find(m => m.id === Number(id))?.active === false;
@@ -49,17 +56,19 @@ const EditMessagePage = () => {
         setLongitude(msg.longitude);
 
         const photosData = await getIncidentPhotos(id);
-        const photos = photosData.map((p, idx) => ({
-          id: p.id ?? idx,
-          url: p.downloadUrl,
-        }));
+        const photos = Array.isArray(photosData)
+          ? photosData.map((p, idx) => ({
+              id: p.id ?? idx,
+              url: p.downloadUrl,
+            }))
+          : [];
         setExistingPhotos(photos);
       } catch (err) {
         console.error('Load error:', err);
         if (err.message?.includes('500') || err.status === 500) {
-          alert('Ошибка сервера. Возможно, инцидент был удалён. Попробуйте позже.');
+          showToast('Ошибка сервера. Возможно, инцидент был удалён.', 'error');
         } else {
-          alert('Не удалось загрузить сообщение: ' + err.message);
+          showToast('Не удалось загрузить сообщение: ' + err.message, 'error');
         }
         navigate('/main');
       } finally {
@@ -69,7 +78,7 @@ const EditMessagePage = () => {
     loadData();
   }, [id, getMessage, navigate]);
 
-  // --- Работа с фото (как в CreateMessagePage) ---
+  // --- Работа с фото ---
   const handleAddPhotoClick = () => {
     pendingActionRef.current = 'add';
     fileInputRef.current.click();
@@ -127,54 +136,59 @@ const EditMessagePage = () => {
     return newErrors;
   };
 
-  // Скачать существующее фото как Blob (для копирования в новый инцидент)
-  const downloadPhotoAsBlob = async (photoUrl) => {
-    const token = localStorage.getItem('accessToken');
-    const response = await fetch(photoUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!response.ok) throw new Error('Не удалось скачать фото');
-    return await response.blob();
-  };
-
   // Публикация черновика (создание нового инцидента)
   const publishDraft = async () => {
-    const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+  const validationErrors = validateForm();
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
 
-    setSaving(true);
-    try {
-      // Теперь достаточно одного вызова: PUT /api/incidents/{id} с active: true
-      await updateMessage(id, {
-        title: topic,
-        description,
-        type: category,
-        address,
-        latitude,
-        longitude,
-        active: true,
-      });
+  setSaving(true);
+  try {
+    await updateMessage(id, {
+      title: topic,
+      description,
+      type: category,
+      address,
+      latitude,
+      longitude,
+      active: true,
+    });
 
-      // Фото
-      for (const photoId of photosToDelete) {
-        await deleteIncidentPhoto(id, photoId);
-      }
-      for (const photo of newPhotos) {
-        await uploadIncidentPhoto(id, photo.file);
-      }
+    await Promise.all(
+      photosToDelete.map(photoId => deleteIncidentPhoto(id, photoId))
+    );
 
-      await refreshMessages();
-      navigate(`/message/${id}`);
-    } catch (err) {
-      alert('Ошибка при публикации: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
+    await Promise.all(
+      newPhotos.map(photo => uploadIncidentPhoto(id, photo.file))
+    );
+
+    await reloadPhotos();   // 🔥 ВАЖНО
+
+    await refreshMessages();
+    showToast('Сообщение опубликовано', 'success');
+    navigate(`/message/${id}`);
+  } catch (err) {
+    showToast('Ошибка при публикации: ' + err.message, 'error');
+  } finally {
+    setSaving(false);
+  }
+};
+  const reloadPhotos = async () => {
+    const photosData = await getIncidentPhotos(id);
+
+    const photos = Array.isArray(photosData)
+      ? photosData.map((p, idx) => ({
+          id: p.id ?? idx,
+          url: p.downloadUrl,
+        }))
+      : [];
+
+    setExistingPhotos(photos);
+    setNewPhotos([]);
+    setPhotosToDelete([]);
   };
-
   // Обновление опубликованного инцидента (без изменения статуса)
   const updatePublished = async () => {
     const validationErrors = validateForm();
@@ -192,27 +206,30 @@ const EditMessagePage = () => {
         address,
         latitude,
         longitude,
-        active: isDraft ? false : true,   // сохраняем текущий статус
+        active: isDraft ? false : true,
       });
 
-      for (const photoId of photosToDelete) {
-        await deleteIncidentPhoto(id, photoId);
-      }
-      for (const photo of newPhotos) {
-        await uploadIncidentPhoto(id, photo.file);
-      }
+      await Promise.all(
+        photosToDelete.map(photoId => deleteIncidentPhoto(id, photoId))
+      );
 
+      await Promise.all(
+        newPhotos.map(photo => uploadIncidentPhoto(id, photo.file))
+      );
+
+      await reloadPhotos();
+
+      showToast('Изменения сохранены', 'success');
       navigate(`/message/${id}`);
       return true;
     } catch (err) {
-      alert('Ошибка при сохранении: ' + err.message);
+      showToast('Ошибка при сохранении: ' + err.message, 'error');
       return false;
     } finally {
       setSaving(false);
     }
   };
-
-  // Сохранение как черновик (только для черновиков, иначе предупреждение)
+  // Сохранение как черновик
   const saveAsDraft = async () => {
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -222,7 +239,6 @@ const EditMessagePage = () => {
 
     setSaving(true);
     try {
-      // Единый вызов для всех случаев: обновляем данные и статус на false
       await updateMessage(id, {
         title: topic,
         description,
@@ -233,18 +249,19 @@ const EditMessagePage = () => {
         active: false,
       });
 
-      // Фото
       for (const photoId of photosToDelete) {
         await deleteIncidentPhoto(id, photoId);
       }
-      for (const photo of newPhotos) {
-        await uploadIncidentPhoto(id, photo.file);
+      if (newPhotos.length > 0) {
+          await Promise.all(newPhotos.map(p => uploadIncidentPhoto(id, p.file)));
       }
 
       await refreshMessages();
+      await reloadPhotos();
+      showToast('Черновик сохранён', 'success');
       navigate('/drafts');
     } catch (err) {
-      alert('Ошибка при сохранении черновика: ' + err.message);
+      showToast('Ошибка при сохранении черновика: ' + err.message, 'error');
     } finally {
       setSaving(false);
     }
@@ -275,6 +292,15 @@ const EditMessagePage = () => {
 
   return (
     <div className="create-message-page">
+      {/* Кнопка "На главную" – справа сверху */}
+      <button
+        className="home-button"
+        onClick={() => navigate('/main')}
+        aria-label="На главную"
+      >
+        <img src={homeIcon} alt="На главную" className="icon-img" />
+      </button>
+
       <h1 className="page-title">Редактирование сообщения</h1>
 
       <form onSubmit={handlePublish} className="create-message-form">
@@ -403,6 +429,13 @@ const EditMessagePage = () => {
           </button>
         </div>
       </form>
+
+      {/* Toast-уведомление */}
+      {toast.message && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 };

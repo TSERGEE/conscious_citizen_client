@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
 import placeholderImg from '../../assets/placeholder.png';
+import homeIcon from '../../assets/icons/home.png'; // добавлен импорт иконки домой
 import './CreateMessagePage.css';
 
 const CreateMessagePage = () => {
@@ -10,21 +11,28 @@ const CreateMessagePage = () => {
   const { addMessage } = useMessages();
   const { lat, lng, address } = location.state || {};
 
-  useEffect(() => {
-    if (!address) {
-      alert('Сначала выберите место на карте');
-      navigate('/main');
-    }
-  }, [address, navigate]);
-
   const [topic, setTopic] = useState('');
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState([]);
   const [category, setCategory] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState({ message: '', type: '' });
   const fileInputRef = useRef(null);
   const pendingActionRef = useRef('add');
+
+  // Функция показа уведомления
+  const showToast = (message, type = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast({ message: '', type: '' }), 2000);
+  };
+
+  useEffect(() => {
+    if (!address) {
+      showToast('Сначала выберите место на карте', 'error');
+      navigate('/main');
+    }
+  }, [address, navigate]);
 
   const handleAddPhotoClick = () => {
     pendingActionRef.current = 'add';
@@ -89,7 +97,6 @@ const CreateMessagePage = () => {
 
     setIsSubmitting(true);
     try {
-      // ПЕРЕДАЕМ photos вторым аргументом
       const newId = await addMessage({
         title: topic,
         description,
@@ -100,9 +107,10 @@ const CreateMessagePage = () => {
         active: true,
       }, photos.map(p => p.file));
       
+      showToast('Сообщение опубликовано!', 'success');
       navigate(`/message/${newId}`);
     } catch (err) {
-      alert('Ошибка при публикации: ' + err.message);
+      showToast('Ошибка при публикации: ' + err.message, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -118,7 +126,7 @@ const CreateMessagePage = () => {
 
     setIsSubmitting(true);
     try {
-      const newId = await addMessage({
+      await addMessage({
         title: topic,
         description,
         type: category,
@@ -126,11 +134,12 @@ const CreateMessagePage = () => {
         latitude: lat,
         longitude: lng,
         active: false,
-      }, photos.map(p => p.file)); 
+      }, photos.map(p => p.file));
       
+      showToast('Черновик сохранён', 'success');
       navigate(`/drafts`);
     } catch (err) {
-      alert('Ошибка при сохранении черновика: ' + err.message);
+      showToast('Ошибка при сохранении черновика: ' + err.message, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -140,6 +149,15 @@ const CreateMessagePage = () => {
 
   return (
     <div className="create-message-page">
+      {/* Кнопка "На главную" – справа сверху */}
+      <button 
+        className="home-button" 
+        onClick={() => navigate('/main')}
+        aria-label="На главную"
+      >
+        <img src={homeIcon} alt="На главную" className="icon-img" />
+      </button>
+
       <h1 className="page-title">Создание сообщения</h1>
 
       <form onSubmit={handlePublish} className="create-message-form">
@@ -239,6 +257,13 @@ const CreateMessagePage = () => {
           </button>
         </div>
       </form>
+
+      {/* Toast-уведомление */}
+      {toast.message && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 };

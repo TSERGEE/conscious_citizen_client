@@ -714,19 +714,42 @@
 
 .admin-view .remove-photo-btn {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  background: var(--danger);
+  top: 8px;   /* Теперь внутри фото */
+  right: 8px; /* Теперь внутри фото */
+  
+  width: 28px;
+  height: 28px;
+  
+  background: rgba(229, 62, 62, 0.85); /* Полупрозрачный красный */
+  backdrop-filter: blur(4px);          /* Эффект матового стекла */
   color: white;
+  
   border: none;
-  border-radius: 50%;
-  width: 22px;
-  height: 22px;
+  border-radius: 8px; /* Квадратная со скруглением выглядит серьезнее */
+  
   display: flex;
   align-items: center;
   justify-content: center;
+  
   cursor: pointer;
-  font-size: 12px;
+  font-size: 16px;
+  
+  opacity: 0; /* Прячем по умолчанию */
+  transform: translateY(-5px); /* Смещаем чуть выше для анимации */
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+.admin-view .photo-preview-item:hover .remove-photo-btn,
+.admin-photo-card:hover .remove-photo-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Чтобы кнопка не сливалась с темными фото, добавим легкую тень */
+.admin-view .remove-photo-btn:hover {
+  background: var(--danger);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.4);
 }
 .admin-view .address-display {
   padding: 8px 12px;
@@ -810,22 +833,16 @@
   border-radius: 12px;
 }
 
-.admin-view .photo-preview-item {
-  width: 100%;
-  aspect-ratio: 1 / 1; /* Квадратные превью */
+.admin-view .photo-preview-item, 
+.admin-photo-card {
   position: relative;
-  border-radius: 8px;
-  border: 1px solid var(--border-light);
+  border-radius: 12px; /* Чуть увеличим радиус для мягкости */
+  overflow: hidden;    /* Важно, чтобы кнопка не вылетала за границы */
+  transition: transform 0.2s ease;
 }
-
-/* Вот тут фикс отображения самих картинок */
-.admin-view .photo-preview {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* Чтобы фото не растягивалось, а заполняло квадрат */
-  display: block;
+.admin-view .photo-preview-item:hover {
+  transform: scale(1.02); /* Легкий зум при наведении */
 }
-
 .admin-view .remove-photo-btn {
   z-index: 10;
   background: var(--danger);
@@ -966,4 +983,30 @@
   max-width: 70vw;
   max-height: 70vh;
   object-fit: contain;
+}
+/* Убедись, что контейнер ДЕЙСТВИТЕЛЬНО квадратный и относительный */
+.admin-view .photo-preview-item {
+  position: relative; /* КРИТИЧНО для крестика */
+  width: 120px;       /* Или любая фиксированная ширина */
+  height: 120px;      /* Или aspect-ratio: 1/1 */
+  border-radius: 10px;
+  overflow: hidden;   /* Чтобы картинка не вылезала за границы */
+  background: var(--bg-secondary);
+}
+
+/* Картинка должна заполнять весь квадрат без искажений */
+.admin-view .photo-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Кнопка должна быть прибита к углу внутри контейнера */
+.admin-view .remove-photo-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 5;
+  /* остальные стили (фон, цвет и т.д.) */
 }

@@ -190,32 +190,6 @@
   border: 2px dashed var(--border-light);
 }
 
-.profile-container .photo-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.profile-container .photo-actions button {
-  padding: 10px 16px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  background: var(--accent);
-  color: white;
-  transition: 0.3s;
-}
-
-.profile-container .photo-actions button:hover {
-  background: var(--accent-hover);
-}
-
-.profile-container .photo-actions .remove-btn {
-  background: var(--danger);
-}
-
-.profile-container .photo-actions .remove-btn:hover {
-  background: var(--danger-hover);
-}
 .profile-container .form-group:has(.photo-upload) {
   display: flex;
   flex-direction: column;
@@ -270,4 +244,93 @@
   color: var(--text-muted);
   cursor: default;
   text-align: center;
+}
+.profile-container .photo-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.profile-container .photo-actions button,
+.profile-container .photo-actions label {
+  flex: 1;                       /* занимают равное доступное пространство */
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 12px;             /* одинаковые отступы */
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  transition: background 0.3s, opacity 0.3s;
+  display: inline-block;
+  line-height: normal;
+  box-sizing: border-box;
+  white-space: nowrap;           /* текст в одну строку */
+}
+
+/* Если на узких экранах текст не помещается — переносим */
+@media (max-width: 480px) {
+  .profile-container .photo-actions button,
+  .profile-container .photo-actions label {
+    white-space: normal;
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+}
+
+.profile-container .photo-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profile-container .photo-actions button:hover:not(:disabled),
+.profile-container .photo-actions label:hover {
+  background: var(--accent-hover);
+}
+
+.profile-container .photo-actions .remove-btn {
+  background: var(--danger);
+}
+
+.profile-container .photo-actions .remove-btn:hover:not(:disabled) {
+  background: var(--danger-hover);
+}
+.profile-container {
+  position: relative;
+  padding-top: 60px;
+}
+
+/* Кнопка домой */
+.home-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: var(--accent-light);
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+}
+
+.home-button:hover {
+  background-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.home-button .icon-img {
+  width: 24px;
+  height: 24px;
+}
+
+[data-theme="dark"] .home-button .icon-img {
+  filter: brightness(0) invert(1);
 }

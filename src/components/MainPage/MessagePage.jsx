@@ -2,8 +2,18 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMessages } from '../../contexts/MessagesContext';
 import SecureImage from '../SecureImage/SecureImage';
-import {   generateDocument,   downloadDocument,  viewDocument,   sendDocumentByEmail, uploadIncidentPhoto, deleteIncident } from '../../api';
+import { generateDocument, downloadDocument, sendDocumentByEmail, deleteIncident } from '../../api';
 import './MessagePage.css';
+
+// Импорт PNG-иконок (поместите свои файлы в папку assets/icons)
+import homeIcon from '../../assets/icons/home.png';
+import saveIcon from '../../assets/icons/save.png';
+import editIcon from '../../assets/icons/edit.png';
+import deleteIcon from '../../assets/icons/delete.png';
+// Если раскомментируете кнопки документа – импортируйте и их:
+// import downloadIcon from '../../assets/icons/download.png';
+// import emailIcon from '../../assets/icons/email.png';
+// import viewIcon from '../../assets/icons/view.png';
 
 const categoryLabels = {
   PARKING: 'Парковка',
@@ -16,9 +26,16 @@ const MessagePage = () => {
   const { getMessage, addMessage, currentUserId } = useMessages();
   const [message, setMessage] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null); // индекс открытого фото
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
   const [docLoading, setDocLoading] = useState({ download: false, email: false, view: false });
   const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState({ message: '', type: '' }); // для уведомлений
+
+  // Функция показа уведомления
+  const showToast = (message, type = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast({ message: '', type: '' }), 2000);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -27,33 +44,31 @@ const MessagePage = () => {
       .catch(() => navigate('/main'));
     return () => { mounted = false; };
   }, [id, getMessage, navigate]);
+
   useEffect(() => {
     console.log('currentUserId (из контекста):', currentUserId, typeof currentUserId);
     console.log('message.userId (из API):', message?.userId, typeof message?.userId);
   }, [currentUserId, message]);
-  // Вспомогательная функция для ожидания генерации документа
+
   const waitForDocument = async (incidentId, maxAttempts = 10, delay = 2000) => {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        // Пытаемся скачать документ (если есть — вернёт blob)
         const blob = await downloadDocument(incidentId);
         return blob;
       } catch (error) {
-        // Проверяем, является ли ошибка 404 (документ ещё не готов)
         const isNotFound = error.message?.includes('Document not generated') || 
                           error.message?.includes('404');
-        
         if (isNotFound && attempt < maxAttempts) {
           console.log(`Документ ещё не готов, попытка ${attempt}/${maxAttempts}...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
-        // Если ошибка другого типа или попытки кончились — выбрасываем
         throw error;
       }
     }
     throw new Error('Документ не сгенерирован после нескольких попыток');
   };
+
   const handleDelete = async () => {
     if (!message) return;
     const confirmed = window.confirm('Вы уверены, что хотите удалить это сообщение? Действие необратимо.');
@@ -62,39 +77,37 @@ const MessagePage = () => {
     setDeleting(true);
     try {
       await deleteIncident(message.id);
-      alert('Сообщение удалено');
-      navigate('/main'); // или на страницу со списком
+      showToast('Сообщение удалено', 'success');
+      navigate('/main');
     } catch (err) {
-      alert('Ошибка при удалении: ' + err.message);
+      showToast('Ошибка при удалении: ' + err.message, 'error');
     } finally {
       setDeleting(false);
     }
   };
-  // Скачивание документа
+
   const handleDownload = async () => {
     if (!message) return;
     setDocLoading(prev => ({ ...prev, download: true }));
     try {
-      // Пробуем скачать существующий документ
       let blob = await downloadDocument(message.id);
-      // Если документ ещё не сгенерирован, downloadDocument выбросит ошибку 404
-      // В этом случае запускаем генерацию и ждём
-    } catch (err) {
-      // Предполагаем, что документ отсутствует – запускаем генерацию
-      console.log('Документ отсутствует, запускаем генерацию...');
-      await generateDocument(message.id);
-      // Ждём появления документа
-      const blob = await waitForDocument(message.id);
       saveBlobAsFile(blob, `incident_${message.id}.pdf`);
+      showToast('Документ скачан', 'success');
+    } catch (err) {
+      console.log('Документ отсутствует, запускаем генерацию...');
+      try {
+        await generateDocument(message.id);
+        const blob = await waitForDocument(message.id);
+        saveBlobAsFile(blob, `incident_${message.id}.pdf`);
+        showToast('Документ сгенерирован и скачан', 'success');
+      } catch (genErr) {
+        showToast('Ошибка генерации документа', 'error');
+      }
+    } finally {
       setDocLoading(prev => ({ ...prev, download: false }));
-      return;
     }
-    // Если скачивание с первого раза успешно
-    saveBlobAsFile(blob, `incident_${message.id}.pdf`);
-    setDocLoading(prev => ({ ...prev, download: false }));
   };
 
-  // Вспомогательная функция сохранения Blob как файла
   const saveBlobAsFile = (blob, filename) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -106,44 +119,36 @@ const MessagePage = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  // Отправка по email
   const handleSendEmail = async () => {
     if (!message) return;
     setDocLoading(prev => ({ ...prev, email: true }));
     try {
-      // Проверяем, есть ли документ (пытаемся скачать)
       await downloadDocument(message.id);
     } catch (err) {
-      // Если нет – генерируем
       await generateDocument(message.id);
-      // Ждём генерации (можно без ожидания, т.к. sendDocumentByEmail всё равно упадёт, если файла нет)
-      // Поэтому лучше дождаться
       await waitForDocument(message.id);
     }
-    // Отправляем email
     await sendDocumentByEmail(message.id);
-    alert('Документ отправлен на email');
+    showToast('Документ отправлен на email', 'success');
     setDocLoading(prev => ({ ...prev, email: false }));
   };
 
-  // Просмотр / печать
   const handleView = async () => {
     if (!message) return;
     setDocLoading(prev => ({ ...prev, view: true }));
     try {
       let blob = await viewDocument(message.id);
-      saveBlobAsFile(blob, `incident_${message.id}.pdf`); // или открыть в новой вкладке
-      // Альтернативно: открыть в новой вкладке
-      // const url = window.URL.createObjectURL(blob);
-      // window.open(url, '_blank');
+      saveBlobAsFile(blob, `incident_${message.id}.pdf`);
+      showToast('Документ открыт', 'success');
     } catch (err) {
-      // Если документа нет – генерируем
       await generateDocument(message.id);
       const blob = await waitForDocument(message.id);
       saveBlobAsFile(blob, `incident_${message.id}.pdf`);
+      showToast('Документ сгенерирован и открыт', 'success');
     }
     setDocLoading(prev => ({ ...prev, view: false }));
   };
+
   const handleSaveAsDraft = async () => {
     if (!message) return;
     setSaving(true);
@@ -157,10 +162,10 @@ const MessagePage = () => {
         longitude: message.longitude,
         active: false,
       }, []);
-      alert('Черновик создан');
+      showToast('Черновик создан', 'success');
       navigate('/drafts');
     } catch (err) {
-      alert('Ошибка: ' + err.message);
+      showToast('Ошибка: ' + err.message, 'error');
     } finally {
       setSaving(false);
     }
@@ -172,35 +177,22 @@ const MessagePage = () => {
 
   const isOwner = () => {
     if (!currentUserId || !message?.userId) return false;
-    // Приводим к числу для надёжного сравнения
     return Number(message.userId) === Number(currentUserId);
   };
 
-  // Открыть фото по индексу
-  const openPhoto = (index) => {
-    setSelectedPhotoIndex(index);
-  };
-
-  // Закрыть модальное окно
-  const closeModal = () => {
-    setSelectedPhotoIndex(null);
-  };
-
-  // Переключение на следующее фото
+  const openPhoto = (index) => setSelectedPhotoIndex(index);
+  const closeModal = () => setSelectedPhotoIndex(null);
   const nextPhoto = () => {
     if (message?.photos && selectedPhotoIndex !== null) {
       setSelectedPhotoIndex((selectedPhotoIndex + 1) % message.photos.length);
     }
   };
-
-  // Переключение на предыдущее фото
   const prevPhoto = () => {
     if (message?.photos && selectedPhotoIndex !== null) {
       setSelectedPhotoIndex((selectedPhotoIndex - 1 + message.photos.length) % message.photos.length);
     }
   };
 
-  // Обработка клавиш навигации
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (selectedPhotoIndex === null) return;
@@ -216,7 +208,17 @@ const MessagePage = () => {
 
   return (
     <div className="message-page">
+      {/* Кнопка "На главную" – справа сверху */}
+      <button 
+        className="home-button" 
+        onClick={() => navigate('/main')}
+        aria-label="На главную"
+      >
+        <img src={homeIcon} alt="На главную" className="icon-img" />
+      </button>
+
       <h1 className="page-title">Сообщение</h1>
+
       <div className="message-content">
         <div className="message-field">
           <label>Автор</label>
@@ -225,9 +227,7 @@ const MessagePage = () => {
 
         <div className="message-field">
           <label>Рубрика</label>
-          <div className="message-value">
-            {categoryLabels[message.type] || message.type}
-          </div>
+          <div className="message-value">{categoryLabels[message.type] || message.type}</div>
         </div>
 
         <div className="message-field">
@@ -240,16 +240,8 @@ const MessagePage = () => {
           <div className="photo-gallery">
             {message.photos && message.photos.length > 0 ? (
               message.photos.map((photoUrl, idx) => (
-                <div
-                  key={idx}
-                  className="gallery-item"
-                  onClick={() => openPhoto(idx)}
-                >
-                  <SecureImage
-                    src={photoUrl}
-                    alt={`Фото ${idx + 1}`}
-                    className="gallery-photo"
-                  />
+                <div key={idx} className="gallery-item" onClick={() => openPhoto(idx)}>
+                  <SecureImage src={photoUrl} alt={`Фото ${idx + 1}`} className="gallery-photo" />
                 </div>
               ))
             ) : (
@@ -270,23 +262,29 @@ const MessagePage = () => {
       </div>
 
       <div className="action-panel">
-        <button className="action-btn" onClick={handleSaveAsDraft} disabled={saving}>
-          {saving ? '⏳' : '📥'}
+        <button className="action-btn" onClick={handleSaveAsDraft} disabled={saving} title="Сохранить как черновик">
+          <img src={saveIcon} alt="Сохранить" className="icon-img" />
         </button>
-        {/*<button className="action-btn" onClick={handleDownload} disabled={docLoading.download}>
-          {docLoading.download ? '⏳' : '💾'}
+
+        {/* Раскомментируйте, если нужны кнопки документа с PNG-иконками
+        <button className="action-btn" onClick={handleDownload} disabled={docLoading.download} title="Скачать PDF">
+          <img src={downloadIcon} alt="Скачать" className="icon-img" />
         </button>
-        <button className="action-btn" onClick={handleSendEmail} disabled={docLoading.email}>
-          {docLoading.email ? '⏳' : '📧'}
+        <button className="action-btn" onClick={handleSendEmail} disabled={docLoading.email} title="Отправить на email">
+          <img src={emailIcon} alt="Email" className="icon-img" />
         </button>
-        <button className="action-btn" onClick={handleView} disabled={docLoading.view}>
-          {docLoading.view ? '⏳' : '🖨️'}
-        </button>*/}
+        <button className="action-btn" onClick={handleView} disabled={docLoading.view} title="Просмотреть">
+          <img src={viewIcon} alt="Просмотр" className="icon-img" />
+        </button>
+        */}
+
         {isOwner() && (
           <>
-            <button className="action-btn" onClick={handleEdit}>✏️</button>
-            <button className="action-btn" onClick={handleDelete} disabled={deleting}>
-              {deleting ? '⏳' : '🗑️'}
+            <button className="action-btn" onClick={handleEdit} title="Редактировать">
+              <img src={editIcon} alt="Редактировать" className="icon-img" />
+            </button>
+            <button className="action-btn" onClick={handleDelete} disabled={deleting} title="Удалить">
+              <img src={deleteIcon} alt="Удалить" className="icon-img" />
             </button>
           </>
         )}
@@ -312,6 +310,13 @@ const MessagePage = () => {
               {selectedPhotoIndex + 1} / {message.photos.length}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast-уведомление */}
+      {toast.message && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.message}
         </div>
       )}
     </div>

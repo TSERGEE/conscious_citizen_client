@@ -73,7 +73,7 @@ const handleError = async (response) => {
 };
 
 // --- Обёртка для авторизованных запросов с автоматическим обновлением токена ---
-const fetchWithAuth = async (url, options = {}) => {
+export const fetchWithAuth = async (url, options = {}) => {
   // Получаем текущий токен
   const getToken = () => localStorage.getItem('accessToken');
 
@@ -82,52 +82,49 @@ const fetchWithAuth = async (url, options = {}) => {
       ...options.headers,
       Authorization: `Bearer ${token}`,
     };
-    // Добавляем X-User-Id, если он есть
+    
     const userId = localStorage.getItem('userId');
     if (userId && !headers['X-User-Id']) {
       headers['X-User-Id'] = userId;
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    if (response.status === 401) {
-      // Токен истёк – пробуем обновить
-      if (!isRefreshing) {
-        isRefreshing = true;
-        try {
-          const newToken = await refreshAccessToken();
-          onRefreshed(newToken);
-          isRefreshing = false;
-          // Повторяем исходный запрос с новым токеном
-          return executeRequest(newToken);
-        } catch (err) {
-          isRefreshing = false;
-          // Очищаем подписчиков и выбрасываем ошибку
-          refreshSubscribers = [];
-          throw err;
-        }
-      } else {
-        // Ждём окончания обновления
-        return new Promise((resolve, reject) => {
-          addRefreshSubscriber(async (newToken) => {
-            try {
-              const result = await executeRequest(newToken);
-              resolve(result);
-            } catch (err) {
-              reject(err);
-            }
-          });
-        });
+    // --- ЛОГ ЗАПРОСА ---
+    console.groupCollapsed(`[API Request] ${options.method || 'GET'} ${url}`);
+    console.log('Headers:', headers);
+    if (options.body instanceof FormData) {
+      console.log('Body: FormData (files)');
+      for (let pair of options.body.entries()) {
+        console.log(`${pair[0]}:`, pair[1]);
       }
+    } else {
+      console.log('Body:', options.body);
     }
+    console.groupEnd();
 
-    if (!response.ok) {
-      await handleError(response);
+    try {
+      const response = await fetch(url, { ...options, headers });
+
+      // Если запрос прошел (даже если там ошибка CORS, мы сюда можем не попасть)
+      console.log(`[API Response] ${url} | Status: ${response.status}`);
+      
+      if (response.status === 401) {
+        // ... ваш существующий код рефреша ...
+      }
+
+      if (!response.ok) {
+        await handleError(response);
+      }
+      return response;
+    } catch (err) {
+      // --- ДЕТАЛЬНЫЙ ЛОГ ОШИБКИ ---
+      console.error(`[API Critical Error] ${url}`);
+      console.error('Error message:', err.message);
+      
+      if (err.message === 'Failed to fetch') {
+        console.warn('%cВНИМАНИЕ: Это скорее всего ошибка CORS (сервер прислал два заголовка Access-Control-Allow-Origin). Проверьте вкладку Network!', 'color: orange; font-weight: bold;');
+      }
+      throw err;
     }
-    return response;
   };
 
   const token = getToken();
@@ -158,9 +155,13 @@ export const login = async (credentials) => {
   });
   if (!response.ok) await handleError(response);
   const data = await response.json();
+
   localStorage.setItem('accessToken', data.token);
   localStorage.setItem('refreshToken', data.refreshToken);
   localStorage.setItem('userId', data.id);
+  const userLogin = data.login || data.username || credentials.login;
+  localStorage.setItem('userLogin', userLogin);
+
   return { token: data.token, refreshToken: data.refreshToken, userId: data.id };
 };
 
@@ -246,7 +247,7 @@ export const uploadIncidentPhoto = async (incidentId, file) => {
     body: formData,
     // Не указываем Content-Type, браузер установит сам
   });
-  return response.json();
+  return true; // просто успех
 };
 
 export const getIncidentPhotos = async (incidentId) => {
@@ -333,4 +334,79 @@ export const getIncidentCount = async () => {
     method: 'GET',
   });
   return response.json(); // сервер возвращает Integer
+};
+
+export const fetchImageAsBlob = async (url) => {
+  const response = await fetchWithAuth(url, {
+    method: 'GET',
+    headers: {
+      'Accept': 'image/*'
+    }
+  });
+  if (!response.ok) throw new Error('Ошибка загрузки изображения');
+  return await response.blob();
+};
+export const uploadAvatar = async (userId, login, file) => {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+  if (!login) {
+    throw new Error('Login is required');
+  }
+
+  // Валидация файла
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Допустимые форматы: JPEG, PNG, JPG');
+  }
+  if (file.size > 5 * 1024 * 1024) { // 5 MB
+    throw new Error('Файл не должен превышать 5 MB');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const response = await fetchWithAuth(`/user/${login}/avatar`, {
+      method: 'PUT',
+      body: formData,
+      headers: {
+        'X-User-Id': userId.toString() // Добавляем обязательный заголовок
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Ошибка загрузки аватара:', error);
+    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+      throw new Error('Не удалось подключиться к серверу. Проверьте интернет‑соединение.');
+    }
+    throw error;
+  }
+};
+
+export const deleteAvatar = async (login) => {
+  try {
+    const response = await fetchWithAuth(`/user/${login}/avatar`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Ошибка удаления аватара:', error);
+    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+      throw new Error('Не удалось подключиться к серверу.');
+    }
+    throw error;
+  }
 };

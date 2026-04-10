@@ -103,7 +103,6 @@ export default function AdminPanel() {
   const [existingPhotos, setExistingPhotos] = useState([]);
   const [newPhotos, setNewPhotos] = useState([]);
   const [photosToDelete, setPhotosToDelete] = useState([]);
-  const [editPhotosPreviews, setEditPhotosPreviews] = useState([]);
   const pendingActionRef = useRef('add');
 
   const [photoViewerIndex, setPhotoViewerIndex] = useState(null);
@@ -167,7 +166,7 @@ const prevPhoto = () => {
         }))
       );
       setEditPhotos([]);
-      setEditPhotosPreviews([]);
+      setNewPhotos([]);
       setEditingIncident(fullData);
       setEditForm({
         title: fullData.title || '',
@@ -202,12 +201,15 @@ const prevPhoto = () => {
         previewUrl: URL.createObjectURL(file)
     }));
 
-    if (pendingActionRef.current === 'add') {
-        setNewPhotos(prev => [...prev, ...photoObjects]);
-    } else {
-        setNewPhotos(photoObjects);
+    if (pendingActionRef.current === 'replace') {
+      setExistingPhotos([]);
+      setPhotosToDelete(prev => [
+        ...prev,
+        ...existingPhotos.map(p => p.id)
+      ]);
     }
 
+    setNewPhotos(prev => [...prev, ...photoObjects]);
     e.target.value = '';
   };
   const removeNewPhoto = (tempId) => {
@@ -265,7 +267,13 @@ const prevPhoto = () => {
       setEditLoading(false);
     }
   };
-
+  useEffect(() => {
+  return () => {
+    newPhotos.forEach(p => {
+      if (p.previewUrl) URL.revokeObjectURL(p.previewUrl);
+    });
+  };
+}, [newPhotos]);
   useEffect(() => {
     if (!manualOverride) {
       setCurrentLayer(theme === 'dark' ? layers.darkStadia : layers.standard);
@@ -376,22 +384,19 @@ const handleViewDetails = async (id) => {
   setDetailsLoading(true);
   try {
     const fullIncident = await getIncidentById(id);
-    const photosData = await getIncidentPhotos(id);
-    const photoUrls = photosData.map(p => p.downloadUrl);
-
-    // Находим автора в списке пользователей
-    const author = users.find(u => u.id === fullIncident.userId);
+    
+    // Пытаемся найти расширенную инфу о юзере в общем списке для Email
+    const authorInfo = users.find(u => u.id === fullIncident.userId);
 
     setSelectedMessageDetails({
       ...fullIncident,
-      photos: photoUrls,
-      authorName: author?.fullName || '—',
-      authorEmail: author?.email || '—',
-      active: fullIncident.active !== undefined ? fullIncident.active : true,
+      // Если fullName есть в деталях — берем оттуда, если нет — из списка админа
+      authorName: fullIncident.fullName || authorInfo?.fullName || '—',
+      authorEmail: authorInfo?.email || '—', 
+      active: fullIncident.active ?? true,
     });
   } catch (err) {
-    console.error('Ошибка загрузки деталей инцидента:', err);
-    alert('Не удалось загрузить подробную информацию');
+    console.error('Ошибка:', err);
   } finally {
     setDetailsLoading(false);
   }
@@ -522,7 +527,7 @@ const handleViewDetails = async (id) => {
                         <td>{inc.type === 'PARKING' ? 'Парковка' : 'Просроченные продукты'}</td>
                         <td>{inc.address || '—'}</td>
                         <td>{inc.created ? new Date(inc.created).toLocaleDateString() : '—'}</td>
-                        <td>{getAuthorName(inc.userId)}</td>
+                        <td>{inc.fullName || '—'}</td>
                         <td className="table-actions-cell" onClick={(e) => e.stopPropagation()}>
                           <button className="btn-table-icon" onClick={() => handleEditClick(inc.id)}>
                             <Pencil size={16} />
@@ -785,7 +790,12 @@ const handleViewDetails = async (id) => {
                               src={photo.url}
                               alt="photo"
                               className="admin-photo-img"
-                              onClick={() => openPhotoViewer(photo.url)}
+                              onClick={() =>
+                                openPhotoViewer(
+                                  existingPhotos.indexOf(photo),
+                                  existingPhotos.map(p => p.url)
+                                )
+                              }
                             />
 
                             <button
@@ -797,30 +807,25 @@ const handleViewDetails = async (id) => {
                             </button>
                           </div>
                         ))}
-                        {newPhotos.map(photo => (
-                          <div key={photo.id}>
+                        {/* Блок отрисовки новых фото */}
+                          {newPhotos.map(photo => (
+                            <div key={photo.id} className="admin-photo-card"> {/* Добавлен класс контейнера */}
                               <img
                                 src={photo.previewUrl}
                                 className="photo-preview"
+                                alt="new-preview"
                               />
 
                               <button
+                                type="button" /* Добавлено, чтобы форма случайно не отправилась */
+                                className="remove-photo-btn" /* Добавлен класс для позиционирования крестика */
                                 onClick={() => removeNewPhoto(photo.id)}
                               >
                                 ✕
                               </button>
-                          </div>
-                        ))}
-                        {editPhotosPreviews.map(p => (
-                          <div key={p.id} className="admin-photo-card new">
-                            <img
-                              src={p.url}
-                              alt="New"
-                              className="admin-photo-img"
-                            />
-                            <button onClick={() => removeNewPhoto(p.id)}>✕</button>
-                          </div>
-                        ))}
+                            </div>
+                          ))}
+                        
                       </div>
                     </div>
                   )}
@@ -851,23 +856,7 @@ const handleViewDetails = async (id) => {
                       Заменить фото
                     </button>
                   </div>
-                  {editPhotosPreviews.length > 0 && (
-                    <div className="photo-preview-list" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
-                      {editPhotosPreviews.map(photo => (
-                        <div key={photo.id} className="photo-preview-item" style={{ position: 'relative', width: '80px', height: '80px' }}>
-                          <img src={photo.previewUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                          <button
-                            type="button"
-                            className="remove-photo-btn"
-                            onClick={() => removeNewPhoto(photo.id)}
-                            style={{ position: 'absolute', top: '-8px', right: '-8px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer' }}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  
                 </div>
 
                 <div className="modal-actions">
