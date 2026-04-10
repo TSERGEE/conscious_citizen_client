@@ -3,12 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { fetchWithAuth } from '../../api'; // путь к api.js
 import placeholderImg from '../../assets/placeholder.png';
 
-const SecureImage = ({ src, alt, className }) => {
+const SecureImage = ({ src, alt, className, fallback }) => {
   const [imageUrl, setImageUrl] = useState(null);
 
   useEffect(() => {
     if (!src) {
-      setImageUrl(placeholderImg);
+      setImageUrl(fallback || placeholderImg);
       return;
     }
 
@@ -36,7 +36,7 @@ const SecureImage = ({ src, alt, className }) => {
       isActive = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [src]);
+  }, [src, fallback]);
 
   return <img src={imageUrl || placeholderImg} alt={alt} className={className} />;
 };

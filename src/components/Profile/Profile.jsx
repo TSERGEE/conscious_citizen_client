@@ -77,9 +77,10 @@ const Profile = () => {
       <div className="profile-photo">
         {userData.avatarUrl ? (
           <SecureImage 
-            src={`${BASE_URL}${userData.avatarUrl}`} 
+            src={userData.avatarUrl ? `${BASE_URL}${userData.avatarUrl}` : null}
             alt="Аватар" 
-            className="profile-avatar" 
+            className="profile-avatar"
+            fallback={getAvatarPlaceholder(firstName, lastName, userData.email)}
           />
         ) : (
           <img
