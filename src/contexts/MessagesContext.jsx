@@ -115,26 +115,19 @@ export const MessagesProvider = ({ children }) => {
   // Создание инцидента с принудительной активацией
   const addMessage = async (messageData, photoFiles = []) => {
     try {
-      console.log('[Messages] Создаю инцидент...', messageData);
-      // Создаём инцидент (бэкенд может проигнорировать active при создании)
-      const newIncident = await createIncident(messageData);
+      // Создаём инцидент сразу с нужным статусом
+      const newIncident = await createIncident({
+        ...messageData,
+        active: messageData.active ?? false,   // явно указываем
+      });
       const incidentId = newIncident.id;
-      console.log('[Messages] Инцидент создан, id=', incidentId);
 
-      // Если нужно сделать инцидент активным (active === true), принудительно обновляем
-      if (messageData.active === true) {
-        await updateIncident(incidentId, { active: true });
-        console.log('[Messages] Инцидент активирован через updateIncident');
-      }
-
-      // Загружаем фото, если есть
+      // Загружаем фото (если есть)
       if (photoFiles.length > 0) {
         const uploadPromises = photoFiles.map(file => uploadIncidentPhoto(incidentId, file));
         await Promise.all(uploadPromises);
-        console.log('[Messages] Фото загружены');
       }
 
-      // Перезагружаем список инцидентов
       await loadMessages();
       return incidentId;
     } catch (err) {

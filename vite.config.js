@@ -16,17 +16,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:54455',
         changeOrigin: true,
-        secure: false,
-        // Фикс для удаления дублирующихся CORS заголовков
-        onProxyRes: (proxyRes) => {
-          const key = 'access-control-allow-origin';
-          if (proxyRes.headers[key]) {
-            // Если пришло несколько значений (напр. "*, *"), 
-            // принудительно оставляем только одно "*"
-            proxyRes.headers[key] = '*'; 
-          }
-        }
-      }
-    }
-  }
+      },
+    },
+  },
 })

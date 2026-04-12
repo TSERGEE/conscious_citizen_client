@@ -1,5 +1,6 @@
 // api.js
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+//const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+//const BASE_URL = 'http://localhost:54455';
 
 // --- Переменные для предотвращения множественных обновлений токена ---
 let isRefreshing = false;
@@ -22,7 +23,7 @@ const refreshAccessToken = async () => {
   }
 
   console.log('[Auth] Обновление токена...');
-  const response = await fetch(`${BASE_URL}/auth/refreshToken`, {
+  const response = await fetch(`/auth/refreshToken`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
@@ -82,49 +83,53 @@ export const fetchWithAuth = async (url, options = {}) => {
       ...options.headers,
       Authorization: `Bearer ${token}`,
     };
-    
+    // Добавляем X-User-Id, если он есть
     const userId = localStorage.getItem('userId');
     if (userId && !headers['X-User-Id']) {
       headers['X-User-Id'] = userId;
     }
 
-    // --- ЛОГ ЗАПРОСА ---
-    console.groupCollapsed(`[API Request] ${options.method || 'GET'} ${url}`);
-    console.log('Headers:', headers);
-    if (options.body instanceof FormData) {
-      console.log('Body: FormData (files)');
-      for (let pair of options.body.entries()) {
-        console.log(`${pair[0]}:`, pair[1]);
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    if (response.status === 401) {
+      // Токен истёк – пробуем обновить
+      if (!isRefreshing) {
+        isRefreshing = true;
+        try {
+          const newToken = await refreshAccessToken();
+          onRefreshed(newToken);
+          isRefreshing = false;
+          // Повторяем исходный запрос с новым токеном
+          return executeRequest(newToken);
+        } catch (err) {
+          isRefreshing = false;
+          // Очищаем подписчиков и выбрасываем ошибку
+          refreshSubscribers = [];
+          throw err;
+        }
+      } else {
+        // Ждём окончания обновления
+        return new Promise((resolve, reject) => {
+          addRefreshSubscriber(async (newToken) => {
+            try {
+              const result = await executeRequest(newToken);
+              resolve(result);
+            } catch (err) {
+              reject(err);
+            }
+          });
+        });
       }
-    } else {
-      console.log('Body:', options.body);
     }
-    console.groupEnd();
-
-    try {
-      const response = await fetch(url, { ...options, headers });
-
-      // Если запрос прошел (даже если там ошибка CORS, мы сюда можем не попасть)
-      console.log(`[API Response] ${url} | Status: ${response.status}`);
-      
-      if (response.status === 401) {
-        // ... ваш существующий код рефреша ...
-      }
-
-      if (!response.ok) {
-        await handleError(response);
-      }
-      return response;
-    } catch (err) {
-      // --- ДЕТАЛЬНЫЙ ЛОГ ОШИБКИ ---
-      console.error(`[API Critical Error] ${url}`);
-      console.error('Error message:', err.message);
-      
-      if (err.message === 'Failed to fetch') {
-        console.warn('%cВНИМАНИЕ: Это скорее всего ошибка CORS (сервер прислал два заголовка Access-Control-Allow-Origin). Проверьте вкладку Network!', 'color: orange; font-weight: bold;');
-      }
-      throw err;
+    console.log('[fetchWithAuth] token exists:', !!token);
+    console.log('[fetchWithAuth] headers:', headers);
+    if (!response.ok) {
+      await handleError(response);
     }
+    return response;
   };
 
   const token = getToken();
@@ -138,7 +143,7 @@ export const fetchWithAuth = async (url, options = {}) => {
 
 // --- Публичные функции без авторизации (не используют fetchWithAuth) ---
 export const register = async (userData) => {
-  const response = await fetch(`${BASE_URL}/auth/register`, {
+  const response = await fetch(`/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(userData),
@@ -148,7 +153,7 @@ export const register = async (userData) => {
 };
 
 export const login = async (credentials) => {
-  const response = await fetch(`${BASE_URL}/auth/login`, {
+  const response = await fetch(`/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(credentials),
@@ -166,7 +171,7 @@ export const login = async (credentials) => {
 };
 
 export const requestPasswordReset = async (email) => {
-  const response = await fetch(`${BASE_URL}/user/password/reset/request`, {
+  const response = await fetch(`/user/password/reset/request`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -175,7 +180,7 @@ export const requestPasswordReset = async (email) => {
 };
 
 export const confirmPasswordReset = async (token, newPassword) => {
-  const response = await fetch(`${BASE_URL}/user/password/reset/confirm`, {
+  const response = await fetch(`/user/password/reset/confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, newPassword }),
@@ -186,21 +191,21 @@ export const confirmPasswordReset = async (token, newPassword) => {
 // --- Защищённые функции, переписанные через fetchWithAuth ---
 
 export const getUser = async (login) => {
-  const response = await fetchWithAuth(`${BASE_URL}/user/${login}`, {
+  const response = await fetchWithAuth(`/user/${login}`, {
     method: 'GET',
   });
   return response.json();
 };
 
 export const getUserRole = async (login) => {
-  const response = await fetchWithAuth(`${BASE_URL}/user/${login}/role`, {
+  const response = await fetchWithAuth(`/user/${login}/role`, {
     method: 'GET',
   });
   return response.text();
 };
 
 export const updateUser = async (login, data) => {
-  const response = await fetchWithAuth(`${BASE_URL}/user/${login}`, {
+  const response = await fetchWithAuth(`/user/${login}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -209,7 +214,7 @@ export const updateUser = async (login, data) => {
 };
 
 export const createIncident = async (incident) => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents`, {
+  const response = await fetchWithAuth(`/api/incidents`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(incident),
@@ -218,21 +223,21 @@ export const createIncident = async (incident) => {
 };
 
 export const getAllIncidents = async () => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents`, {
+  const response = await fetchWithAuth(`/api/incidents`, {
     method: 'GET',
   });
   return response.json();
 };
 
 export const getIncidentById = async (id) => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/${id}`, {
+  const response = await fetchWithAuth(`/api/incidents/${id}`, {
     method: 'GET',
   });
   return response.json();
 };
 
 export const getDraftIncidents = async () => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/drafts`, {
+  const response = await fetchWithAuth(`/api/incidents/drafts`, {
     method: 'GET',
   });
   return response.json();
@@ -242,7 +247,7 @@ export const uploadIncidentPhoto = async (incidentId, file) => {
   const formData = new FormData();
   formData.append('file', file);
   // Для FormData заголовок Content-Type не устанавливаем
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/${incidentId}/photos`, {
+  const response = await fetchWithAuth(`/api/incidents/${incidentId}/photos`, {
     method: 'POST',
     body: formData,
     // Не указываем Content-Type, браузер установит сам
@@ -251,21 +256,21 @@ export const uploadIncidentPhoto = async (incidentId, file) => {
 };
 
 export const getIncidentPhotos = async (incidentId) => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/${incidentId}/photos`, {
+  const response = await fetchWithAuth(`/api/incidents/${incidentId}/photos`, {
     method: 'GET',
   });
   return response.json();
 };
 
 export const getAllAdminIncidents = async () => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/admin`, {
+  const response = await fetchWithAuth(`/api/incidents/admin`, {
     method: 'GET',
   });
   return response.json();
 };
 
 export const deleteIncident = async (incidentId) => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/${incidentId}`, {
+  const response = await fetchWithAuth(`/api/incidents/${incidentId}`, {
     method: 'DELETE',
   });
   const contentType = response.headers.get("content-type");
@@ -276,7 +281,7 @@ export const deleteIncident = async (incidentId) => {
 };
 
 export const updateIncident = async (incidentId, incidentData) => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/${incidentId}`, {
+  const response = await fetchWithAuth(`/api/incidents/${incidentId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(incidentData),
@@ -285,21 +290,21 @@ export const updateIncident = async (incidentId, incidentData) => {
 };
 
 export const getAllUsers = async () => {
-  const response = await fetchWithAuth(`${BASE_URL}/user/admin/userstats`, {
+  const response = await fetchWithAuth(`/user/admin/userstats`, {
     method: 'GET',
   });
   return response.json();
 };
 
 export const generateDocument = async (incidentId) => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/${incidentId}/document`, {
+  const response = await fetchWithAuth(`/api/incidents/${incidentId}/document`, {
     method: 'POST',
   });
   // Ожидается 202 Accepted, без тела
 };
 
 export const downloadDocument = async (incidentId) => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/${incidentId}/document`, {
+  const response = await fetchWithAuth(`/api/incidents/${incidentId}/document`, {
     method: 'GET',
   });
   if (response.status === 404) {
@@ -311,26 +316,26 @@ export const downloadDocument = async (incidentId) => {
 };
 
 export const viewDocument = async (incidentId) => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/${incidentId}/document/view`, {
+  const response = await fetchWithAuth(`/api/incidents/${incidentId}/document/view`, {
     method: 'GET',
   });
   return response.blob();
 };
 
 export const sendDocumentByEmail = async (incidentId) => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/${incidentId}/document/send`, {
+  const response = await fetchWithAuth(`/api/incidents/${incidentId}/document/send`, {
     method: 'POST',
   });
 };
 
 export const deleteIncidentPhoto = async (incidentId, photoId) => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/${incidentId}/photos/${photoId}`, {
+  const response = await fetchWithAuth(`/api/incidents/${incidentId}/photos/${photoId}`, {
     method: 'DELETE',
   });
   // обычно 204 No Content
 };
 export const getIncidentCount = async () => {
-  const response = await fetchWithAuth(`${BASE_URL}/api/incidents/count`, {
+  const response = await fetchWithAuth(`/api/incidents/count`, {
     method: 'GET',
   });
   return response.json(); // сервер возвращает Integer
@@ -371,7 +376,7 @@ export const uploadAvatar = async (userId, login, file) => {
       method: 'PUT',
       body: formData,
       headers: {
-        'X-User-Id': userId.toString() // Добавляем обязательный заголовок
+        'X-User-Id': userId // Добавляем обязательный заголовок
       }
     });
 
